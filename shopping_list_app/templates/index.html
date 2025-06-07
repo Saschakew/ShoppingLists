@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+
+{% block title %}Welcome - Shopping List App{% endblock %}
+
+{% block content %}
+    <div class="card text-center" style="margin-top: var(--spacing-xl);">
+        <div style="padding: var(--spacing-lg);">
+            <h1>Welcome to Your Shared Shopping List!</h1>
+            <p class="text-color-secondary" style="font-size: 1.1rem; margin-bottom: var(--spacing-lg);">Easily manage your shopping lists with family and friends, in real-time.</p>
+            
+            {% if not current_user.is_authenticated %}
+                <div class="d-flex" style="gap: var(--spacing-md); justify-content: center;">
+                    <a href="{{ url_for('auth.login') }}" class="btn btn-primary">Log In</a>
+                    <a href="{{ url_for('auth.register') }}" class="btn btn-secondary">Register</a>
+                </div>
+            {% else %}
+                <a href="{{ url_for('main.dashboard') }}" class="btn btn-primary">Go to Dashboard</a>
+            {% endif %}
+        </div>
+    </div>
+{% endblock %}

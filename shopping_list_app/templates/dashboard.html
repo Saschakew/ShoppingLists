@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Shopping List App{% endblock %}
+
+{% block content %}
+    <h1>My Shopping Lists</h1>
+    <p style="margin-bottom: var(--spacing-lg);">Welcome, <strong>{{ current_user.username }}</strong>!</p>
+
+    {# Display Flashed Messages #}
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <div class="flashes">
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category }}">{{ message }}</div>
+            {% endfor %}
+            </div>
+        {% endif %}
+    {% endwith %}
+
+    <div class="card" style="margin-bottom: var(--spacing-xl);">
+        <h2>Create a New Shopping List</h2>
+        <form method="POST" action="{{ url_for('main.dashboard') }}">
+            <div class="form-group">
+                <label for="list_name">List Name:</label>
+                <input type="text" id="list_name" name="list_name" placeholder="E.g., Weekly Groceries, Party Supplies" required>
+            </div>
+            <button type="submit" class="btn btn-primary w-100">Create List</button>
+        </form>
+    </div>
+
+    <h2>Your Lists</h2>
+    {% if lists %}
+        <div class="lists-container">
+            {% for list_item in lists %}
+                <div class="list-card">
+                    <a href="{{ url_for('main.list_detail', list_id=list_item.id) }}">{{ list_item.name }}</a>
+                    <div class="list-meta">
+                        <span class="owner">Owner: {{ list_item.owner.username }}</span>
+                        <small>Created: {{ list_item.created_at.strftime('%Y-%m-%d %H:%M') }}</small>
+                    </div>
+                    {# Add delete button later #}
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="empty-state card">
+            {# You can add an icon here later if desired, e.g., <div class="empty-state-icon">📝</div> #}
+            <h3>No Shopping Lists Yet!</h3>
+            <p>Looks like your dashboard is empty. Get started by creating your first shopping list above.</p>
+        </div>
+    {% endif %}
+{% endblock %}

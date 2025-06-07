@@ -1,0 +1,166 @@
+{% extends "base.html" %}
+
+{% block title %}{{ list.name }}{% endblock %}
+
+{% block nav_title %}
+    <h1 class="nav-title">{{ list.name }}</h1>
+{% endblock %}
+
+{% block nav_actions %}
+    <a href="{{ url_for('main.share_list_page', list_id=list.id) }}" class="nav-icon-link" title="Share list">&#9776;</a>
+{% endblock %}
+
+{% block content %}
+
+    {# Display Flashed Messages #}
+{% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+        <div class="flashes floating-flashes" id="flash-messages">
+        {% for category, message in messages %}
+            <div class="alert alert-{{ category }} fade-out">{{ message }}</div>
+        {% endfor %}
+        </div>
+    {% endif %}
+{% endwith %}
+
+<div class="shopping-list-container">
+        <ul id="item-list" class="items-container">
+            {% if items %}
+                {% for item in items %}
+                    <li id="item-{{ item.id }}" class="item{% if item.is_purchased %} purchased{% endif %}">
+                        <div class="item-content">
+                            <span class="item-name">{{ item.item_name }}</span>
+                        </div>
+                        <div class="item-actions">
+                            {% if current_user.id == list.owner_id or current_user.id == item.added_by_id %}
+                                <form method="POST" action="{{ url_for('main.delete_item', item_id=item.id) }}" style="display: inline;">
+                                    <button type="submit" class="btn-delete">✕</button>
+                                </form>
+                            {% endif %}
+                        </div>
+                    </li>
+                {% endfor %}
+            {% endif %}
+        </ul>
+        <div id="empty-list-message" class="empty-state" {% if items %}style="display:none;"{% endif %}>
+            <p>List is empty</p>
+        </div>
+    </div>
+    <div class="add-item-form-container">
+        <form method="POST" action="{{ url_for('main.list_detail', list_id=list.id) }}" id="add-item-form">
+            <div class="form-group mb-0">
+                <div class="input-group">
+                    <input type="text" id="item_name" name="item_name" class="form-control" placeholder="Add new item..." required autofocus>
+                    <button type="submit" class="btn btn-primary">Add</button>
+                </div>
+            </div>
+        </form>
+    </div>
+{% endblock %}
+
+{% block scripts %}
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Auto-dismiss flash messages
+            const flashMessages = document.querySelectorAll('.alert.fade-out');
+            if (flashMessages.length > 0) {
+                setTimeout(() => {
+                    flashMessages.forEach(msg => {
+                        if (msg && msg.parentNode) {
+                            msg.parentNode.removeChild(msg);
+                        }
+                    });
+                }, 3000);
+            }
+            // Use a simple Socket.IO connection with minimal configuration
+            const socket = io({
+                transports: ['polling', 'websocket'],  // Start with polling which is more reliable on mobile
+                reconnectionAttempts: 5,
+                reconnectionDelay: 1000,
+                timeout: 20000
+            });
+
+            // Get the list ID from the URL
+            const pathParts = window.location.pathname.split('/');
+            const listId = parseInt(pathParts[pathParts.length - 1]);
+            
+            // Join the room for this specific list
+            socket.on('connect', function() {
+                socket.emit('join_list_room', { list_id: listId });
+            });
+
+            const itemList = document.getElementById('item-list');
+            const emptyListMessage = document.getElementById('empty-list-message');
+
+            socket.on('item_added', function(data) {
+                if(data.list_id === listId) {
+                    const item = data.item;
+                    
+                    const newItemLi = document.createElement('li');
+                    newItemLi.id = `item-${item.id}`;
+                    newItemLi.className = 'item';
+                    if (item.is_purchased) {
+                        newItemLi.classList.add('purchased');
+                    }
+                    
+                    // Create item content div
+                    const itemContentDiv = document.createElement('div');
+                    itemContentDiv.className = 'item-content';
+                    
+                    // Create item name span
+                    const itemNameSpan = document.createElement('span');
+                    itemNameSpan.className = 'item-name';
+                    itemNameSpan.textContent = item.name;
+                    
+                    // Append name to content div
+                    itemContentDiv.appendChild(itemNameSpan);
+                    
+                    // Create item actions div
+                    const itemActionsDiv = document.createElement('div');
+                    itemActionsDiv.className = 'item-actions';
+                    
+                    if (!item.is_purchased) {
+                        // Create delete form
+                        const deleteForm = document.createElement('form');
+                        deleteForm.className = 'delete-form';
+                        deleteForm.method = 'POST';
+                        deleteForm.action = `/item/${item.id}/delete`;
+                        
+                        const deleteButton = document.createElement('button');
+                        deleteButton.type = 'submit';
+                        deleteButton.className = 'btn btn-danger btn-sm';
+                        deleteButton.textContent = '✕';
+                        
+                        deleteForm.appendChild(deleteButton);
+                        itemActionsDiv.appendChild(deleteForm);
+                    } else {
+                        const purchasedSpan = document.createElement('span');
+                        purchasedSpan.className = 'purchased-badge';
+                        purchasedSpan.textContent = '✓';
+                        itemActionsDiv.appendChild(purchasedSpan);
+                    }
+                    
+                    // Append content and actions to the list item
+                    newItemLi.appendChild(itemContentDiv);
+                    newItemLi.appendChild(itemActionsDiv);
+                    
+                    itemList.appendChild(newItemLi);
+                    emptyListMessage.style.display = 'none'; // Hide empty message
+                }
+            });
+
+            socket.on('item_deleted', function(data) {
+                if(data.list_id === listId) {
+                    const itemElement = document.getElementById(`item-${data.item_id}`);
+                    if (itemElement) {
+                        itemElement.remove();
+                    }
+                    if (itemList.children.length === 0) {
+                        emptyListMessage.style.display = 'block'; // Show empty message if list is now empty
+                    }
+                }
+            });
+        });
+    </script>
+{% endblock %}

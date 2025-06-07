@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+
+{% block title %}Share {{ list.name }}{% endblock %}
+
+{% block content %}
+    <div class="list-header">
+        <h1>Share {{ list.name }}</h1>
+        <a href="{{ url_for('main.list_detail', list_id=list.id) }}" class="back-link">Back to List</a>
+    </div>
+
+    {# Display Flashed Messages #}
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <div class="flashes">
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category }}">{{ message }}</div>
+            {% endfor %}
+            </div>
+        {% endif %}
+    {% endwith %}
+
+    <div class="card share-card">
+        {% if can_share %}
+            <h2 class="h4">Share this list</h2>
+            <form method="POST" action="{{ url_for('main.share_list', list_id=list.id) }}">
+                <div class="form-group">
+                    <label for="share_with_username">Share with (username):</label>
+                    <div class="input-group">
+                        <input type="text" id="share_with_username" name="share_with_username" placeholder="Enter username" required>
+                        <button type="submit" class="btn btn-secondary">Share</button>
+                    </div>
+                </div>
+            </form>
+        {% endif %}
+        
+        <div class="shared-users">
+            <h3 class="h5">Currently Shared With:</h3>
+            {% if list.shares %}
+                <ul class="list-unstyled mt-2">
+                {% for share in list.shares %}
+                    <li>{{ share.user.username }}</li>
+                {% endfor %}
+                </ul>
+            {% else %}
+                <p class="not-shared">Not shared with anyone yet.</p>
+            {% endif %}
+        </div>
+    </div>
+{% endblock %}

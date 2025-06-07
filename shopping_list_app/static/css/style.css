@@ -1,0 +1,699 @@
+/* Global Resets and Base Styles */
+:root {
+    --primary-color: #007AFF; /* A modern, friendly blue */
+    --secondary-color: #34C759; /* A vibrant green for positive actions */
+    --danger-color: #FF3B30; /* A clear red for destructive actions */
+    --warning-color: #FF9500; /* Orange for warnings */
+
+    --text-color-primary: #1c1c1e; /* Near black for high contrast text */
+    --text-color-secondary: #8e8e93; /* Gray for secondary text */
+    --text-color-light: #FFFFFF;
+
+    --bg-primary: #F2F2F7; /* Light gray for main background */
+    --bg-secondary: #FFFFFF; /* White for cards, modals, etc. */
+    --bg-tertiary: #E5E5EA; /* Slightly darker gray for subtle divisions */
+
+    --border-color: #C6C6C8; /* Subtle border color */
+    --border-radius-sm: 6px;
+    --border-radius-md: 10px;
+    --border-radius-lg: 16px;
+
+    --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.05);
+    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.1);
+
+    --font-family-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+    --font-size-base: 16px;
+    --line-height-base: 1.6;
+
+    --spacing-xs: 4px;
+    --spacing-sm: 8px;
+    --spacing-md: 16px;
+    --spacing-lg: 24px;
+    --spacing-xl: 32px;
+
+    --transition-fast: all 0.15s ease-in-out;
+    --transition-normal: all 0.3s ease-in-out;
+
+    --touch-target-size: 48px;
+}
+
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    -webkit-tap-highlight-color: transparent;
+}
+
+html {
+    font-size: var(--font-size-base);
+    scroll-behavior: smooth;
+}
+
+body {
+    font-family: var(--font-family-sans);
+    background-color: var(--bg-primary);
+    color: var(--text-color-primary);
+    line-height: var(--line-height-base);
+    height: 100vh; /* Fixed height at 100% viewport height */
+    display: flex;
+    flex-direction: column;
+    padding-bottom: env(safe-area-inset-bottom); /* For iPhone X+ safe areas */
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    overflow: hidden; /* Prevent scrolling on the body */
+}
+
+/* Typography */
+h1, h2, h3, h4, h5, h6 {
+    margin-bottom: var(--spacing-md);
+    font-weight: 600;
+    line-height: 1.3;
+    color: var(--text-color-primary);
+}
+
+h1 { font-size: 2.25rem; }
+/* Adjusted for mobile first, slightly smaller than typical desktop h1 */
+h2 { font-size: 1.75rem; }
+h3 { font-size: 1.375rem; }
+h4 { font-size: 1.125rem; }
+
+p {
+    margin-bottom: var(--spacing-md);
+}
+
+a {
+    color: var(--primary-color);
+    text-decoration: none;
+    transition: var(--transition-fast);
+}
+
+a:hover {
+    text-decoration: underline;
+    opacity: 0.8;
+}
+
+small {
+    font-size: 0.875em;
+    color: var(--text-color-secondary);
+}
+
+/* Navigation */
+nav {
+    background-color: var(--bg-secondary);
+    color: var(--text-color-primary);
+    padding: var(--spacing-sm) var(--spacing-md);
+    box-shadow: var(--shadow-sm);
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+    display: flex;
+    justify-content: space-between; /* Changed for logo/title and links */
+    align-items: center;
+    min-height: calc(var(--touch-target-size) + var(--spacing-sm) * 2); /* Ensure enough height */
+}
+
+.nav-left {
+    display: flex;
+    align-items: center;
+    overflow: hidden;
+    flex: 1;
+}
+
+.nav-middle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.nav-title {
+    margin: 0;
+    margin-left: var(--spacing-md);
+    font-size: 1.2rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 150px;
+}
+
+.nav-icon-link {
+    font-size: 1.2rem;
+    color: var(--text-color-primary);
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 4px;
+    background-color: transparent;
+    margin: 0 var(--spacing-sm);
+    transition: all 0.2s ease;
+}
+
+.nav-icon-link:hover {
+    background-color: rgba(0, 0, 0, 0.1);
+}
+
+nav .nav-brand {
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: var(--primary-color);
+}
+
+nav .nav-links {
+    display: flex;
+    gap: var(--spacing-sm);
+    justify-content: center;
+}
+
+nav .share-link {
+    background-color: var(--primary-color);
+    color: white;
+    padding: var(--spacing-xs) var(--spacing-md);
+    border-radius: var(--border-radius-sm);
+    text-decoration: none;
+    font-size: 0.9rem;
+    display: inline-block;
+}
+
+nav a {
+    color: var(--text-color-primary);
+    font-weight: 500;
+    padding: var(--spacing-sm) var(--spacing-md);
+    border-radius: var(--border-radius-sm);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: var(--touch-target-size);
+    min-width: var(--touch-target-size);
+    text-decoration: none;
+}
+
+nav a:hover, nav a.active {
+    background-color: var(--bg-tertiary);
+    color: var(--primary-color);
+}
+
+/* Container for the main content */
+.container {
+    width: 100vw;
+    max-width: 100vw;
+    margin: 0;
+    padding: var(--spacing-md);
+    height: calc(100% - 120px); /* Adjust for the input form at bottom */
+    overflow-y: auto; /* Make the container scrollable */
+    padding-bottom: calc(var(--touch-target-size) * 2); /* Add padding at the bottom to avoid overlap with sticky footer */
+    box-sizing: border-box;
+}
+
+/* Cards and Sections */
+.card {
+    background-color: var(--bg-secondary);
+    border-radius: var(--border-radius-md);
+    padding: var(--spacing-md);
+    margin-bottom: var(--spacing-md);
+    box-shadow: var(--shadow-sm);
+    transition: var(--transition-normal);
+}
+
+.card:hover {
+    box-shadow: var(--shadow-md);
+}
+
+/* Forms */
+.form-group {
+    margin-bottom: var(--spacing-md);
+}
+
+label {
+    display: block;
+    font-weight: 500;
+    margin-bottom: var(--spacing-sm);
+    color: var(--text-color-primary);
+}
+
+input[type="text"],
+input[type="password"],
+input[type="email"],
+textarea,
+select {
+    width: 100%;
+    padding: var(--spacing-sm) var(--spacing-md);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius-sm);
+    font-size: var(--font-size-base);
+    background-color: var(--bg-secondary);
+    color: var(--text-color-primary);
+    transition: var(--transition-fast);
+    min-height: var(--touch-target-size);
+    -webkit-appearance: none;
+    appearance: none;
+}
+
+input[type="text"]:focus,
+input[type="password"]:focus,
+input[type="email"]:focus,
+textarea:focus,
+select:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(var(--primary-color), 0.2);
+}
+
+/* Buttons */
+.btn {
+    display: inline-flex; /* Allows for icon alignment */
+    align-items: center;
+    justify-content: center;
+    padding: var(--spacing-sm) var(--spacing-lg);
+    font-size: var(--font-size-base);
+    font-weight: 500;
+    border-radius: var(--border-radius-sm);
+    border: 1px solid transparent;
+    cursor: pointer;
+    transition: var(--transition-fast);
+    text-align: center;
+    min-height: var(--touch-target-size);
+    width: 100%; /* Default to full-width for mobile */
+    -webkit-appearance: none;
+    appearance: none;
+}
+
+.btn-primary {
+    background-color: var(--primary-color);
+    color: var(--text-color-light);
+    border-color: var(--primary-color);
+}
+
+.btn-primary:hover {
+    background-color: darken(var(--primary-color), 10%);
+    border-color: darken(var(--primary-color), 10%);
+}
+
+.btn-secondary {
+    background-color: var(--secondary-color);
+    color: var(--text-color-light);
+    border-color: var(--secondary-color);
+}
+
+.btn-secondary:hover {
+    background-color: darken(var(--secondary-color), 10%);
+    border-color: darken(var(--secondary-color), 10%);
+}
+
+.btn-danger {
+    background-color: var(--danger-color);
+    color: white;
+}
+
+.btn-danger:hover {
+    background-color: var(--danger-color-dark);
+}
+
+.btn-delete {
+    background-color: transparent;
+    color: var(--danger-color);
+    border: none;
+    border-radius: 50%;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.9rem;
+    cursor: pointer;
+    padding: 0;
+    transition: all 0.2s ease;
+}
+
+.btn-delete:hover {
+    background-color: var(--danger-color-light);
+}
+
+/* Lists (General) */
+ul, ol {
+    list-style-position: inside;
+    padding-left: 0; /* Reset for custom styling */
+    margin-bottom: var(--spacing-md);
+}
+
+li {
+    margin-bottom: var(--spacing-sm);
+}
+
+/* Shopping List Specific Styles */
+.items-container {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    width: 100%;
+}
+
+.item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--spacing-xs) var(--spacing-sm);
+    border-bottom: 1px solid var(--border-color-light);
+    background-color: white;
+    margin-bottom: 2px;
+    width: 100%;
+    height: 40px;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+}
+
+.shopping-list-item:hover {
+    border-color: var(--primary-color);
+    box-shadow: var(--shadow-sm);
+}
+
+.item-content {
+    flex-grow: 1;
+}
+
+.item-name {
+    font-weight: 500;
+    font-size: 1.1rem;
+}
+
+.item-meta {
+    font-size: 0.9rem;
+    color: var(--text-color-secondary);
+}
+
+.item-actions {
+    display: flex;
+    gap: var(--spacing-sm);
+    flex-wrap: wrap; /* Allow buttons to wrap on small screens */
+    align-items: center;
+}
+
+.item-actions .btn {
+    width: auto; /* Override full-width for action buttons within items */
+    flex-grow: 1; /* Allow buttons to share space */
+}
+
+/* Purchased Item Styling */
+.purchased {
+    background-color: var(--bg-tertiary);
+    opacity: 0.7;
+}
+
+.purchased .item-name {
+    text-decoration: line-through;
+    color: var(--text-color-secondary);
+}
+
+.purchased-badge {
+    background-color: var(--secondary-color);
+    color: var(--text-color-light);
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    font-size: 16px;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Alerts / Flash Messages */
+.flashes {
+    margin-bottom: var(--spacing-md);
+}
+
+.floating-flashes {
+    position: fixed;
+    top: 60px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 2000;
+    width: 90vw;
+    max-width: 400px;
+    pointer-events: none;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+}
+
+.floating-flashes .alert {
+    pointer-events: auto;
+    min-width: 0;
+    width: 100%;
+    box-sizing: border-box;
+    margin-bottom: 0;
+    margin-top: 0;
+    text-align: center;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+
+.alert {
+    padding: var(--spacing-md);
+    border-radius: var(--border-radius-sm);
+    border: 1px solid transparent;
+    margin-bottom: var(--spacing-md);
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+}
+
+.alert-icon {
+    font-size: 1.5rem; /* Placeholder for potential icon font */
+}
+
+.alert-success {
+    background-color: #e6f7ec; /* Lighter green */
+    border-color: var(--secondary-color);
+    color: #0f5132; /* Darker green text */
+}
+
+.alert-danger {
+    background-color: #ffeeed; /* Lighter red */
+    border-color: var(--danger-color);
+    color: #842029; /* Darker red text */
+}
+
+.alert-info {
+    background-color: #e0f3ff; /* Lighter blue */
+    border-color: var(--primary-color);
+    color: #055160; /* Darker blue text */
+}
+
+/* Authentication Pages */
+.auth-container {
+    background-color: var(--bg-secondary);
+    padding: var(--spacing-lg);
+    border-radius: var(--border-radius-md);
+    margin: var(--spacing-lg) auto;
+    width: 100%;
+    max-width: 400px; /* Constrain width on larger mobile screens */
+    box-shadow: var(--shadow-md);
+}
+
+.auth-container h1, .auth-container h2 {
+    text-align: center;
+    margin-bottom: var(--spacing-lg);
+}
+
+.auth-links {
+    text-align: center;
+    margin-top: var(--spacing-md);
+}
+
+/* Dashboard List Cards */
+.list-card {
+    background-color: var(--bg-secondary);
+    border-radius: var(--border-radius-md);
+    padding: var(--spacing-md);
+    margin-bottom: var(--spacing-md);
+    box-shadow: var(--shadow-sm);
+    transition: var(--transition-normal);
+    display: block; /* Make the whole card a link */
+    color: var(--text-color-primary);
+    text-decoration: none;
+}
+
+.list-card:hover {
+    box-shadow: var(--shadow-md);
+    transform: translateY(-2px);
+    border-color: var(--primary-color);
+}
+
+.list-card h3 {
+    color: var(--primary-color);
+    margin-top: 0;
+    margin-bottom: var(--spacing-sm);
+}
+
+.list-meta {
+    font-size: 0.9rem;
+    color: var(--text-color-secondary);
+}
+
+/* Empty State */
+.empty-state {
+    text-align: center;
+    padding: var(--spacing-xl) var(--spacing-md);
+    color: var(--text-color-secondary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100px;
+}
+
+.empty-state-icon {
+    font-size: 3rem; /* Placeholder */
+    margin-bottom: var(--spacing-md);
+    opacity: 0.5;
+}
+
+.empty-state p {
+    font-size: 1.1rem;
+}
+
+/* Input Groups (e.g., for adding items) */
+.input-group {
+    display: flex;
+    gap: var(--spacing-sm);
+    align-items: stretch; /* Make items in group same height */
+    margin-bottom: var(--spacing-md);
+}
+
+.input-group input[type="text"] {
+    flex-grow: 1;
+    margin-bottom: 0; /* Reset margin from individual input style */
+}
+
+.input-group .btn {
+    width: auto; /* Allow button to size to content */
+    flex-shrink: 0;
+}
+
+/* Utility Classes */
+.text-center { text-align: center; }
+.mb-0 { margin-bottom: 0 !important; }
+.mt-auto { margin-top: auto; }
+.d-flex { display: flex; }
+.align-items-center { align-items: center; }
+.justify-content-between { justify-content: space-between; }
+.w-100 { width: 100%; }
+
+/* Sticky Footer for Add Item */
+.add-item-form-container {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background-color: var(--bg-secondary);
+    padding: var(--spacing-md);
+    box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+    z-index: 1000;
+    border-top: 1px solid var(--border-color);
+}
+
+.add-item-sticky-footer .form-group {
+    margin-bottom: 0;
+}
+
+.add-item-sticky-footer .input-group {
+    display: flex;
+    width: 100%;
+}
+
+.add-item-sticky-footer .form-control-sticky {
+    flex-grow: 1;
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+    height: 48px; /* Larger touch target for mobile */
+    font-size: 16px; /* Prevent zoom on iOS */
+    padding: var(--spacing-sm) var(--spacing-md);
+}
+
+.add-item-sticky-footer .btn-sticky-add {
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+    min-width: 80px;
+}
+
+/* Adjust main content padding to avoid overlap with sticky footer */
+main {
+    padding-bottom: 100px; /* Adjust based on sticky footer height */
+}
+
+/* Metadata Styling */
+.meta-header-details,
+.meta-item-details {
+    font-size: 0.75rem; /* Smaller font size */
+    color: var(--color-text-secondary); /* Lighter color */
+    display: block; /* Ensure it takes up its own line if needed */
+    margin-top: var(--spacing-xs);
+}
+
+.meta-item-details {
+    font-style: italic;
+}
+
+/* Animations */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.fade-in {
+    animation: fadeIn 0.5s ease-out forwards;
+}
+
+/* Desktop and Larger Screen Overrides */
+@media (min-width: 768px) {
+    body {
+        font-size: calc(var(--font-size-base) + 1px); /* Slightly larger base font on desktop */
+    }
+
+    .container {
+        max-width: 960px; /* Standard container width */
+        padding: var(--spacing-lg);
+    }
+
+    nav {
+        padding: var(--spacing-md) var(--spacing-lg);
+    }
+
+    .btn {
+        width: auto; /* Buttons are not full-width by default on desktop */
+    }
+
+    .shopping-list-item, #item-list li {
+        flex-direction: row;
+        align-items: center;
+        justify-content: space-between;
+    }
+
+    .item-actions {
+        flex-wrap: nowrap;
+    }
+
+    .auth-container {
+        padding: var(--spacing-xl);
+    }
+
+    .input-group {
+      /* Already good for desktop, but ensures it stays row */
+      flex-direction: row;
+    }
+
+    h1 { font-size: 2.5rem; }
+    h2 { font-size: 2rem; }
+    h3 { font-size: 1.5rem; }
+}
+
+@media (min-width: 1200px) {
+    .container {
+        max-width: 1140px;
+    }
+}
