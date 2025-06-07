@@ -1,0 +1,58 @@
+functionsDirectory = "C:\\Users\\smsakewe\\Documents\\GitHub\\ShoppingLists\\netlify\\functions"
+functionsDirectoryOrigin = "config-v1"
+headersOrigin = "config"
+redirectsOrigin = "config"
+plugins = []
+
+[build]
+publish = "C:\\Users\\smsakewe\\Documents\\GitHub\\ShoppingLists\\shopping_list_app\\static"
+publishOrigin = "config"
+commandOrigin = "config"
+command = "pip install -r requirements.txt"
+functions = "C:\\Users\\smsakewe\\Documents\\GitHub\\ShoppingLists\\netlify\\functions"
+
+[build.environment]
+PYTHON_VERSION = "3.9"
+
+[build.processing]
+
+[build.processing.css]
+
+[build.processing.html]
+
+[build.processing.images]
+
+[build.processing.js]
+
+[build.services]
+
+[dev]
+command = "flask run --port $PORT"
+targetPort = 5000.0
+publish = "shopping_list_app/static"
+
+[functions]
+
+[functions."*"]
+
+[[headers]]
+for = "/*"
+
+[headers.values]
+X-Frame-Options = "DENY"
+X-Content-Type-Options = "nosniff"
+X-XSS-Protection = "1; mode=block"
+Referrer-Policy = "strict-origin-when-cross-origin"
+Content-Security-Policy = "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:;"
+
+[[redirects]]
+from = "/*"
+to = "/.netlify/functions/server"
+status = 200.0
+force = false
+
+[redirects.query]
+
+[redirects.conditions]
+
+[redirects.headers]
