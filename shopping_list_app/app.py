@@ -1,6 +1,7 @@
 import eventlet
 eventlet.monkey_patch()
 
+import os
 from flask import Flask
 from flask_socketio import join_room, leave_room # Added join_room, leave_room
 
@@ -14,35 +15,40 @@ from .extensions import login_manager, socketio
 def create_app(config_overrides=None):
     """Create and configure an instance of the Flask application."""
     app = Flask(__name__)
-    app.config['SECRET_KEY'] = 'your_very_secret_key_here' # Change in production!
-    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///shopping_list.db'
+
+    # Configuration settings
+    # Load SECRET_KEY from environment variable, with a default for development
+    app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'your_very_secret_key_for_dev')
+    # Load DATABASE_URL from environment variable, with a default SQLite for development
+    app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', 'sqlite:///shopping_list.db')
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-    # Mobile-optimized settings
-    app.config['PERMANENT_SESSION_LIFETIME'] = 31536000  # 1 year in seconds
+
+    # Mobile-optimized settings & Session settings
+    app.config['PERMANENT_SESSION_LIFETIME'] = 31536000  # 1 year
     app.config['SESSION_PERMANENT'] = True
-    app.config['SESSION_TYPE'] = 'filesystem'
-    app.config['REMEMBER_COOKIE_DURATION'] = 31536000  # 1 year in seconds
-    app.config['REMEMBER_COOKIE_SECURE'] = False  # Set to True in production with HTTPS
+    app.config['SESSION_TYPE'] = 'filesystem' # Consider Flask-Session with Redis/Memcached for production scaling
+    app.config['REMEMBER_COOKIE_DURATION'] = 31536000  # 1 year
+    # Set REMEMBER_COOKIE_SECURE to True if FLASK_ENV is production (implies HTTPS)
+    app.config['REMEMBER_COOKIE_SECURE'] = os.environ.get('FLASK_ENV') == 'production'
     app.config['REMEMBER_COOKIE_HTTPONLY'] = True
-    # app.config['DEBUG'] = debug # Debug will be set by FLASK_DEBUG or app.run() argument
 
     if config_overrides:
         app.config.update(config_overrides)
 
+    # Specific test configurations
     if app.config.get('TESTING'):
-        app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///:memory:'
-        app.config['WTF_CSRF_ENABLED'] = False # Disable CSRF for simpler form testing
-        app.config['LOGIN_DISABLED'] = False # Ensure login is not disabled unless explicitly set in tests
+        app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('TEST_DATABASE_URL', 'sqlite:///:memory:')
+        app.config['WTF_CSRF_ENABLED'] = False
+        app.config['LOGIN_DISABLED'] = False
+        app.config['SECRET_KEY'] = 'test_secret_key' # Consistent key for tests
 
     # Initialize extensions with app
     db.init_app(app)
     login_manager.init_app(app)
-    
-    # Simple Socket.IO configuration for better mobile compatibility
-    socketio.init_app(app)
+    socketio.init_app(app, async_mode='eventlet', message_queue=os.environ.get('SOCKETIO_MESSAGE_QUEUE'))
 
     # Configure login manager
-    login_manager.login_view = 'auth.login' # Corrected to blueprint name 'auth'
+    login_manager.login_view = 'auth.login'
     login_manager.login_message_category = 'info'
 
     @login_manager.user_loader
@@ -51,16 +57,16 @@ def create_app(config_overrides=None):
 
     # Import and register blueprints
     from .auth import auth as auth_blueprint
-    app.register_blueprint(auth_blueprint, url_prefix='/auth') # Add a prefix for auth routes
+    app.register_blueprint(auth_blueprint, url_prefix='/auth')
 
-    # Import and register the main blueprint
     from .main import main as main_blueprint
     app.register_blueprint(main_blueprint)
 
-    # Create database tables if they don't exist
-    # This is a simple way for development; for production, use migrations (e.g., Flask-Migrate)
-    with app.app_context():
-        db.create_all()
+    # Create database tables if they don't exist (for development/testing)
+    # For production, use migrations (e.g., Flask-Migrate) and manage schema changes outside app startup.
+    if os.environ.get('FLASK_ENV') != 'production':
+        with app.app_context():
+            db.create_all()
 
     return app
 
