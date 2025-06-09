@@ -116,13 +116,52 @@ sudo systemctl restart nginx
 2. **On the EC2 instance:**
     ```bash
     cd /var/www/shopping_list_app
+    
+    # Backup the database before pulling (optional but recommended)
+    cp instance/shopping_list.db instance/shopping_list.db.backup
+    
+    # Pull changes
     git pull
+    
+    # Update dependencies
     source venv/bin/activate
-    pip install -r requirements.txt  # Important: Update dependencies
+    pip install -r requirements.txt
+    
+    # Recreate database if needed (if database file was removed or schema changed)
+    # This script handles eventlet monkey patching correctly
+    cat > init_db.py << 'EOF'
+    import eventlet
+    eventlet.monkey_patch()
+    
+    from shopping_list_app.app import create_app
+    from shopping_list_app.models import db
+    
+    app = create_app()
+    with app.app_context():
+        db.create_all()
+        print("Database tables created successfully!")
+    EOF
+    
+    # Run only if database issues are suspected
+    python init_db.py
+    
+    # Restart the service
     sudo systemctl restart shoppinglist.service
     ```
 
-   **Important:** Always update dependencies after pulling changes. If you've added new packages to your application, failing to update dependencies will cause 502 Bad Gateway errors.
+   **Important Notes:**
+   
+   1. **Always update dependencies** after pulling changes. New packages or version changes can cause 502 Bad Gateway errors.
+   
+   2. **Database handling:**
+      - If you see database errors after updating, run the `init_db.py` script to recreate tables
+      - Consider backing up your database before major updates
+      - Remember that the database file is now ignored by git (as it should be)
+   
+   3. **Application factory pattern:**
+      - This application uses the factory pattern with `create_app()`
+      - The systemd service must use `"shopping_list_app.app:create_app()"` (with quotes)
+      - If you see "Failed to find attribute 'app'" errors, check this configuration
 
 ## 7. Performance Optimizations
 
@@ -279,6 +318,39 @@ Use one of these solutions:
    # If you see: CONFLICT (modify/delete): instance/shopping_list.db deleted in HEAD and modified in [commit]...
    git rm instance/shopping_list.db
    git commit -m "Resolve merge conflict by removing database file"
+   ```
+   
+   After removing the database file, you'll need to recreate it:
+   ```bash
+   # Initialize the database after removing it from git
+   cd /var/www/shopping_list_app
+   source venv/bin/activate
+   
+   # Create a script to initialize the database (handles eventlet monkey patching)
+   cat > init_db.py << 'EOF'
+   import eventlet
+   eventlet.monkey_patch()  # This needs to happen first due to eventlet requirements
+   
+   from shopping_list_app.app import create_app
+   from shopping_list_app.models import db
+   
+   app = create_app()
+   with app.app_context():
+       db.create_all()
+       print("Database tables created successfully!")
+   EOF
+   
+   # Run the script
+   python init_db.py
+   
+   # Then restart the service
+   sudo systemctl restart shoppinglist.service
+   ```
+   
+   **Note:** If you're using Flask-Migrate, you should run migrations after creating the initial tables:
+   ```bash
+   export FLASK_APP=shopping_list_app.app:create_app
+   flask db upgrade
    ```
 
 2. **Stash your changes temporarily:**
