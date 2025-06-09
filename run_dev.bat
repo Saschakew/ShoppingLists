@@ -1,4 +1,10 @@
 @echo off
+REM Kill any process using port 5000
+echo Checking for processes using port 5000...
+for /f "tokens=5" %%a in ('netstat -aon ^| find ":5000" ^| find "LISTENING"') do (
+    echo Killing process on port 5000 with PID %%a
+    taskkill /F /PID %%a
+)
 echo Starting ShoppingLists development server...
 
 REM Check if virtual environment exists, if not create it
@@ -20,9 +26,9 @@ set FLASK_APP=shopping_list_app.app
 set FLASK_ENV=development
 set FLASK_DEBUG=1
 
-REM Run Flask development server directly
-echo Starting Flask development server...
-python -m shopping_list_app.app
+REM Run Flask development server with SocketIO support
+echo Starting Flask development server with SocketIO...
+python -c "from shopping_list_app.app import socketio, app; socketio.run(app, debug=True, port=5000)"
 
 REM Keep window open if there's an error
 pause
