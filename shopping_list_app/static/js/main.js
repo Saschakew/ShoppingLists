@@ -18,15 +18,52 @@ const groceryCategories = {
 // Function to determine category
 function determineCategory(itemName) {
   const lowerItemName = itemName.toLowerCase();
+  
+  // Priority categories and special cases
+  // Check for "frozen" first as it should override other categories
+  if (lowerItemName.includes('frozen') || lowerItemName.includes('tiefkühl') || lowerItemName.includes('tk-')) {
+    return "Frozen Foods";
+  }
+  
+  // Check for juice/saft which should be beverages not fruits
+  if (lowerItemName.includes('juice') || lowerItemName.includes('saft')) {
+    return "Beverages";
+  }
+  
+  // Check for coffee/beans which should be beverages
+  if (lowerItemName.includes('coffee') || lowerItemName.includes('kaffee')) {
+    return "Beverages";
+  }
+  
+  // Check for toilet paper and toilettenpapier which should be household
+  if (lowerItemName.includes('toilet paper') || lowerItemName.includes('toilettenpapier') || lowerItemName.includes('klopapier')) {
+    return "Household";
+  }
+  
+  // Check for chocolate which should be pantry staples
+  if (lowerItemName.includes('chocolate') || lowerItemName.includes('schokolade')) {
+    return "Pantry Staples";
+  }
+  
+  // General keyword matching for other items
+  let bestMatch = { category: "Other", keywordLength: 0 };
+  
   for (const category in groceryCategories) {
     if (category === "Other") continue; // Skip 'Other' for keyword matching
+    
     for (const keyword of groceryCategories[category]) {
-      if (lowerItemName.includes(keyword.toLowerCase())) { // ensure keyword is also lowercased for comparison
-        return category;
+      const lowerKeyword = keyword.toLowerCase();
+      if (lowerItemName.includes(lowerKeyword)) {
+        // If this keyword is longer than our current best match, use it
+        // This helps with cases where multiple keywords match but we want the most specific one
+        if (lowerKeyword.length > bestMatch.keywordLength) {
+          bestMatch = { category, keywordLength: lowerKeyword.length };
+        }
       }
     }
   }
-  return "Other"; // Default if no keywords match
+  
+  return bestMatch.category;
 }
 
 

@@ -142,3 +142,26 @@ sudo systemctl restart nginx
 ---
 
 **For more details, see the comments in the code and configuration files.**
+
+## 9. Local Development
+
+To run the ShoppingLists application locally for development:
+
+1. **Use the provided development script:**
+   ```
+   run_dev.bat
+   ```
+   This script will:
+   - Create a virtual environment if it doesn't exist
+   - Install all required dependencies including development tools
+   - Set up the Flask development environment
+   - Start the Flask development server
+
+2. **Access the application:**
+   - Open your browser and navigate to `http://127.0.0.1:5000`
+   - The development server provides automatic reloading when code changes are detected
+
+3. **Development environment features:**
+   - Debug mode enabled for detailed error messages
+   - Interactive debugger for examining exceptions
+   - Automatic reloading when code changes

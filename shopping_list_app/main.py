@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, redirect, url_for, request, flash
+from flask import Blueprint, render_template, redirect, url_for, request, flash, jsonify
 from flask_login import login_required, current_user
 from .models import db, ShoppingList, ListItem, ListShare, User
 from .extensions import socketio # Import socketio from extensions.py
@@ -10,6 +10,9 @@ def index():
     # This will be the landing page. 
     # If user is logged in, maybe redirect to dashboard, or show a generic home page.
     if current_user.is_authenticated:
+        # If user has a favorite list, redirect to it
+        if current_user.favorite_list_id:
+            return redirect(url_for('main.list_detail', list_id=current_user.favorite_list_id))
         return redirect(url_for('main.dashboard'))
     return render_template('index.html') # We'll need to create index.html
 
@@ -186,3 +189,30 @@ def share_list(list_id):
     db.session.commit()
     flash(f'List "{list_to_share.name}" shared with {username_to_share_with}.', 'success')
     return redirect(url_for('main.share_list_page', list_id=list_id))
+
+
+@main.route('/list/<int:list_id>/favorite', methods=['POST'])
+@login_required
+def set_favorite_list(list_id):
+    list_instance = ShoppingList.query.get_or_404(list_id)
+    
+    # Check if the current user has access to this list
+    is_owner = list_instance.owner_id == current_user.id
+    is_shared_with_user = ListShare.query.filter_by(list_id=list_id, user_id=current_user.id).first() is not None
+    
+    if not (is_owner or is_shared_with_user):
+        flash('You do not have access to this list.', 'danger')
+        return redirect(url_for('main.dashboard'))
+    
+    # Toggle favorite status
+    if current_user.favorite_list_id == list_id:
+        # If this list is already the favorite, remove it as favorite
+        current_user.favorite_list_id = None
+        flash(f'Removed "{list_instance.name}" from favorites.', 'info')
+    else:
+        # Set this list as the favorite
+        current_user.favorite_list_id = list_id
+        flash(f'Set "{list_instance.name}" as your favorite list.', 'success')
+    
+    db.session.commit()
+    return redirect(url_for('main.list_detail', list_id=list_id))

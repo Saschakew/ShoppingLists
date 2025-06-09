@@ -8,6 +8,15 @@
 
 {% block nav_actions %}
     <a href="{{ url_for('main.share_list_page', list_id=list.id) }}" class="nav-icon-link" title="Share list">&#9776;</a>
+    <form method="POST" action="{{ url_for('main.set_favorite_list', list_id=list.id) }}" style="display: inline;">
+        <button type="submit" class="nav-icon-link" title="{% if current_user.favorite_list_id == list.id %}Remove from favorites{% else %}Set as favorite{% endif %}">
+            {% if current_user.favorite_list_id == list.id %}
+                ★
+            {% else %}
+                ☆
+            {% endif %}
+        </button>
+    </form>
 {% endblock %}
 
 {% block content %}
@@ -98,8 +107,9 @@
     {# main.js is assumed to be loaded via base.html or similar, providing determineCategory #}
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            const currentUserId = {{ current_user.id }};
-            const listOwnerId = {{ list.owner_id }};
+            // Use proper JSON serialization for Flask variables
+            const currentUserId = "{{ current_user.id }}";
+            const listOwnerId = "{{ list.owner_id }}";
 
             // Auto-dismiss flash messages
             const flashMessages = document.querySelectorAll('.alert.fade-out');

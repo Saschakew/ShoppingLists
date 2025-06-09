@@ -12,10 +12,12 @@ class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(100), unique=True, nullable=False)
     password_hash = db.Column(db.String(200), nullable=False)  # Store hashed passwords
+    favorite_list_id = db.Column(db.Integer, db.ForeignKey('shopping_list.id'), nullable=True)  # User's favorite list
     lists = db.relationship('ShoppingList', backref='owner', lazy=True, foreign_keys='ShoppingList.owner_id')
     # Relationship to lists shared with this user is through ListShare
     # items_added relationship can be useful for tracking who added what
     items_added = db.relationship('ListItem', backref='adder', lazy=True, foreign_keys='ListItem.added_by_id')
+    favorite_list = db.relationship('ShoppingList', foreign_keys=[favorite_list_id])
 
     def set_password(self, password):
         self.password_hash = generate_password_hash(password, method='pbkdf2:sha256')

@@ -69,7 +69,26 @@ def create_app(config_overrides=None):
     # For production, use migrations (e.g., Flask-Migrate) and manage schema changes outside app startup.
     if os.environ.get('FLASK_ENV') != 'production':
         with app.app_context():
-            db.create_all()
+            # First check if the database exists
+            try:
+                db.create_all()
+                # Check if we need to add the favorite_list_id column
+                from sqlalchemy import inspect
+                inspector = inspect(db.engine)
+                columns = [column['name'] for column in inspector.get_columns('user')]
+                if 'favorite_list_id' not in columns:
+                    print("Adding missing favorite_list_id column to user table...")
+                    db.engine.execute('ALTER TABLE user ADD COLUMN favorite_list_id INTEGER REFERENCES shopping_list(id)')
+                    print("Column added successfully!")
+            except Exception as e:
+                print(f"Database initialization error: {e}")
+                # If there's an error, try to recreate the tables
+                try:
+                    db.drop_all()
+                    db.create_all()
+                    print("Database recreated successfully!")
+                except Exception as e:
+                    print(f"Failed to recreate database: {e}")
 
     return app
 
