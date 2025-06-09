@@ -115,8 +115,12 @@ sudo systemctl restart nginx
     ```bash
     cd /var/www/shopping_list_app
     git pull
+    source venv/bin/activate
+    pip install -r requirements.txt  # Important: Update dependencies
     sudo systemctl restart shoppinglist.service
     ```
+
+   **Important:** Always update dependencies after pulling changes. If you've added new packages to your application, failing to update dependencies will cause 502 Bad Gateway errors.
 
 ## 7. Troubleshooting
 
@@ -131,6 +135,8 @@ sudo systemctl restart nginx
     sudo tail -n 50 /var/log/nginx/access.log
     ```
 - **Common issues:**
+    - **502 Bad Gateway after update:** Usually indicates missing dependencies. Run `pip install -r requirements.txt` in your virtual environment.
+    - **Error in logs about missing modules:** Check if you've added new imports without installing the packages.
     - Internal Server Error after login: Ensure `login_user` uses `duration=timedelta(...)`, not an integer.
     - Nginx shows default page: Confirm `shoppinglist.conf` uses `listen 80 default_server;` and `server_name _;`.
     - Environment variables in systemd file must be on a single line.
