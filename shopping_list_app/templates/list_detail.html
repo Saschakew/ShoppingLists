@@ -24,15 +24,47 @@
 {% endwith %}
 
 <div class="shopping-list-container">
-        <ul id="item-list" class="items-container">
-            {% if items %}
-                {% for item in items %}
+    {% set has_items = false %}
+    {% for category in categories_ordered %}
+        {% if items_by_category.get(category) %}
+            {% set has_items = true %}
+            {% set category_id_slug = category|replace(' ', '-')|replace('&', 'and')|lower %}
+            <div class="category-section" id="category-section-{{ category_id_slug }}">
+                <h2 class="category-title">{{ category }}</h2>
+                <ul id="item-list-{{ category_id_slug }}" class="items-container category-item-list">
+                    {% for item in items_by_category[category] %}
+                        <li id="item-{{ item.id }}" class="item{% if item.is_purchased %} purchased{% endif %}">
+                            <div class="item-content">
+                                <span class="item-name">{{ item.item_name }}</span>
+                            </div>
+                            <div class="item-actions">
+                                {% if current_user.id == list.owner_id or current_user.id == item.added_by_id %}
+                                    <form method="POST" action="{{ url_for('main.delete_item', item_id=item.id) }}" style="display: inline;">
+                                        <button type="submit" class="btn-delete">✕</button>
+                                    </form>
+                                {% endif %}
+                            </div>
+                        </li>
+                    {% endfor %}
+                </ul>
+            </div>
+        {% endif %}
+    {% endfor %}
+
+    {# Fallback for categories not in PREDEFINED_CATEGORIES but present in items (e.g. old data) #}
+    {% if items_by_category.get('Other') and 'Other' not in categories_ordered %}
+        {# This check might be redundant if 'Other' is always in PREDEFINED_CATEGORIES #}
+        {% set has_items = true %}
+        <div class="category-section" id="category-section-other">
+            <h2 class="category-title">Other</h2>
+            <ul id="item-list-other" class="items-container category-item-list">
+                {% for item in items_by_category['Other'] %}
                     <li id="item-{{ item.id }}" class="item{% if item.is_purchased %} purchased{% endif %}">
                         <div class="item-content">
                             <span class="item-name">{{ item.item_name }}</span>
                         </div>
                         <div class="item-actions">
-                            {% if current_user.id == list.owner_id or current_user.id == item.added_by_id %}
+                             {% if current_user.id == list.owner_id or current_user.id == item.added_by_id %}
                                 <form method="POST" action="{{ url_for('main.delete_item', item_id=item.id) }}" style="display: inline;">
                                     <button type="submit" class="btn-delete">✕</button>
                                 </form>
@@ -40,14 +72,17 @@
                         </div>
                     </li>
                 {% endfor %}
-            {% endif %}
-        </ul>
-        <div id="empty-list-message" class="empty-state" {% if items %}style="display:none;"{% endif %}>
-            <p>List is empty</p>
+            </ul>
         </div>
+    {% endif %}
+
+    <div id="empty-list-message" class="empty-state" {% if not has_items %}style="display:block;"{% else %}style="display:none;"{% endif %}>
+        <p>List is empty</p>
     </div>
-    <div class="add-item-form-container">
+</div>
+<div class="add-item-form-container">
         <form method="POST" action="{{ url_for('main.list_detail', list_id=list.id) }}" id="add-item-form">
+            <input type="hidden" name="category" id="item_category">
             <div class="form-group mb-0">
                 <div class="input-group">
                     <input type="text" id="item_name" name="item_name" class="form-control" placeholder="Add new item..." required autofocus>
@@ -60,8 +95,12 @@
 
 {% block scripts %}
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.min.js"></script>
+    {# main.js is assumed to be loaded via base.html or similar, providing determineCategory #}
     <script>
         document.addEventListener('DOMContentLoaded', function() {
+            const currentUserId = {{ current_user.id }};
+            const listOwnerId = {{ list.owner_id }};
+
             // Auto-dismiss flash messages
             const flashMessages = document.querySelectorAll('.alert.fade-out');
             if (flashMessages.length > 0) {
@@ -73,29 +112,65 @@
                     });
                 }, 3000);
             }
-            // Use a simple Socket.IO connection with minimal configuration
+
             const socket = io({
-                transports: ['polling', 'websocket'],  // Start with polling which is more reliable on mobile
+                transports: ['polling', 'websocket'],
                 reconnectionAttempts: 5,
                 reconnectionDelay: 1000,
                 timeout: 20000
             });
 
-            // Get the list ID from the URL
             const pathParts = window.location.pathname.split('/');
             const listId = parseInt(pathParts[pathParts.length - 1]);
             
-            // Join the room for this specific list
             socket.on('connect', function() {
                 socket.emit('join_list_room', { list_id: listId });
             });
 
-            const itemList = document.getElementById('item-list');
             const emptyListMessage = document.getElementById('empty-list-message');
+
+            function slugifyCategory(categoryName) {
+                if (!categoryName) return 'other';
+                let slug = categoryName.toLowerCase();
+                slug = slug.replace(/ & /g, '-and-');
+                slug = slug.replace(/ /g, '-');
+                return slug;
+            }
 
             socket.on('item_added', function(data) {
                 if(data.list_id === listId) {
                     const item = data.item;
+                    const categorySlug = slugifyCategory(item.category);
+                    const targetListId = `item-list-${categorySlug}`;
+                    let itemListUl = document.getElementById(targetListId);
+                    let categorySectionDiv = document.getElementById(`category-section-${categorySlug}`);
+                    const shoppingListContainer = document.querySelector('.shopping-list-container');
+
+                    // If category section doesn't exist, create it
+                    if (!categorySectionDiv) {
+                        categorySectionDiv = document.createElement('div');
+                        categorySectionDiv.className = 'category-section';
+                        categorySectionDiv.id = `category-section-${categorySlug}`;
+
+                        const categoryTitle = document.createElement('h2');
+                        categoryTitle.className = 'category-title';
+                        categoryTitle.textContent = item.category || 'Other'; // Use item.category for title
+                        categorySectionDiv.appendChild(categoryTitle);
+
+                        itemListUl = document.createElement('ul');
+                        itemListUl.id = targetListId;
+                        itemListUl.className = 'items-container category-item-list';
+                        categorySectionDiv.appendChild(itemListUl);
+
+                        // Insert before the empty list message or at the end
+                        shoppingListContainer.insertBefore(categorySectionDiv, emptyListMessage);
+                    } else if (!itemListUl) {
+                        // Section exists but UL is missing (should not happen if created together)
+                        itemListUl = document.createElement('ul');
+                        itemListUl.id = targetListId;
+                        itemListUl.className = 'items-container category-item-list';
+                        categorySectionDiv.appendChild(itemListUl); // Append to existing section
+                    }
                     
                     const newItemLi = document.createElement('li');
                     newItemLi.id = `item-${item.id}`;
@@ -104,49 +179,37 @@
                         newItemLi.classList.add('purchased');
                     }
                     
-                    // Create item content div
                     const itemContentDiv = document.createElement('div');
                     itemContentDiv.className = 'item-content';
-                    
-                    // Create item name span
                     const itemNameSpan = document.createElement('span');
                     itemNameSpan.className = 'item-name';
                     itemNameSpan.textContent = item.name;
-                    
-                    // Append name to content div
                     itemContentDiv.appendChild(itemNameSpan);
                     
-                    // Create item actions div
                     const itemActionsDiv = document.createElement('div');
                     itemActionsDiv.className = 'item-actions';
-                    
-                    if (!item.is_purchased) {
-                        // Create delete form
+
+                    if (currentUserId === listOwnerId || currentUserId === item.added_by_id) {
                         const deleteForm = document.createElement('form');
-                        deleteForm.className = 'delete-form';
                         deleteForm.method = 'POST';
-                        deleteForm.action = `/item/${item.id}/delete`;
+                        deleteForm.action = `/item/${item.id}/delete`; // Flask will build this URL
+                        deleteForm.style.display = 'inline';
                         
                         const deleteButton = document.createElement('button');
                         deleteButton.type = 'submit';
-                        deleteButton.className = 'btn btn-danger btn-sm';
-                        deleteButton.textContent = '✕';
-                        
+                        deleteButton.className = 'btn-delete';
+                        deleteButton.innerHTML = '&#x2715;'; // HTML entity for X
                         deleteForm.appendChild(deleteButton);
                         itemActionsDiv.appendChild(deleteForm);
-                    } else {
-                        const purchasedSpan = document.createElement('span');
-                        purchasedSpan.className = 'purchased-badge';
-                        purchasedSpan.textContent = '✓';
-                        itemActionsDiv.appendChild(purchasedSpan);
                     }
                     
-                    // Append content and actions to the list item
                     newItemLi.appendChild(itemContentDiv);
                     newItemLi.appendChild(itemActionsDiv);
+                    itemListUl.appendChild(newItemLi);
                     
-                    itemList.appendChild(newItemLi);
-                    emptyListMessage.style.display = 'none'; // Hide empty message
+                    if (emptyListMessage) emptyListMessage.style.display = 'none';
+                    // Ensure the parent category section is visible if it was hidden
+                    if(categorySectionDiv) categorySectionDiv.style.display = '';
                 }
             });
 
@@ -154,13 +217,51 @@
                 if(data.list_id === listId) {
                     const itemElement = document.getElementById(`item-${data.item_id}`);
                     if (itemElement) {
+                        const parentUl = itemElement.closest('ul.category-item-list');
                         itemElement.remove();
+
+                        if (parentUl && parentUl.children.length === 0) {
+                            const parentSection = parentUl.closest('div.category-section');
+                            if (parentSection) {
+                                // Instead of hiding, we could remove it if it's dynamically added
+                                // or if PREDEFINED_CATEGORIES are not always rendered empty.
+                                // For now, let's assume if a category UL is empty, the section can remain (or be hidden by CSS).
+                                // parentSection.style.display = 'none'; // Optional: hide empty sections
+                            }
+                        }
                     }
-                    if (itemList.children.length === 0) {
-                        emptyListMessage.style.display = 'block'; // Show empty message if list is now empty
+
+                    let hasAnyItems = false;
+                    const allCategoryLists = document.querySelectorAll('.category-item-list');
+                    allCategoryLists.forEach(ul => {
+                        if (ul.children.length > 0) {
+                            hasAnyItems = true;
+                        }
+                    });
+
+                    if (!hasAnyItems && emptyListMessage) {
+                        emptyListMessage.style.display = 'block';
                     }
                 }
             });
+
+            const addItemForm = document.getElementById('add-item-form');
+            if (addItemForm) {
+                addItemForm.addEventListener('submit', function(event) {
+                    const itemNameInput = document.getElementById('item_name');
+                    const itemCategoryInput = document.getElementById('item_category');
+
+                    if (itemNameInput && itemCategoryInput) {
+                        const itemName = itemNameInput.value;
+                        if (typeof determineCategory === 'function') {
+                            const category = determineCategory(itemName);
+                            itemCategoryInput.value = category;
+                        } else {
+                            console.error('determineCategory function is not defined. Make sure main.js is loaded and the function is global or properly namespaced.');
+                        }
+                    }
+                });
+            }
         });
     </script>
 {% endblock %}

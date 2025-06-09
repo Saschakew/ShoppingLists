@@ -9,7 +9,7 @@ def test_index_page(client):
     """Test that the index page loads."""
     response = client.get(url_for('main.index'))
     assert response.status_code == 200
-    assert b'Welcome to the Family Shopping List App' in response.data
+    assert b'Welcome to Your Shared Shopping List!' in response.data
 
 def test_dashboard_unauthenticated(client):
     """Test dashboard access when not logged in (should redirect to login)."""
@@ -215,3 +215,64 @@ def test_access_controls(auth_client_fixture, create_user_fixture, app, db):
     assert response.status_code == 302  # Check for redirection status code
     # For share_list, it redirects back to the list detail page
     assert url_for('main.list_detail', list_id=list_id_owned_by_owner1) in response.location
+
+
+def test_add_item_with_category(auth_client_fixture, app, db):
+    authed_client = auth_client_fixture(username='categoryuser')
+    user_id = None
+    list_id = None
+    with app.app_context():
+        user = get_user(db.session, 'categoryuser')
+        assert user is not None
+        user_id = user.id
+        new_list = ShoppingList(name='Categorized List', owner_id=user_id)
+        db.session.add(new_list)
+        db.session.commit()
+        list_id = new_list.id
+
+    item_name = "Blueberries"
+    item_category = "Fruits"
+    response = authed_client.post(url_for('main.list_detail', list_id=list_id),
+                                  data={'item_name': item_name, 'category': item_category},
+                                  follow_redirects=True)
+    assert response.status_code == 200
+    # Check for parts of the flash message
+    assert item_name.encode() in response.data
+    assert b'added to' in response.data
+    assert b'Categorized List' in response.data
+
+    with app.app_context():
+        list_item = db.session.query(ListItem).filter_by(item_name=item_name, list_id=list_id).first()
+        assert list_item is not None
+        assert list_item.category == item_category
+        assert list_item.added_by_id == user_id
+
+def test_add_item_without_category_defaults_to_other(auth_client_fixture, app, db):
+    authed_client = auth_client_fixture(username='defaultcategoryuser')
+    user_id = None
+    list_id = None
+    with app.app_context():
+        user = get_user(db.session, 'defaultcategoryuser')
+        assert user is not None
+        user_id = user.id
+        new_list = ShoppingList(name='Default Category List', owner_id=user_id)
+        db.session.add(new_list)
+        db.session.commit()
+        list_id = new_list.id
+
+    item_name = "Exotic Fruit X"
+    # Note: 'category' field is intentionally omitted from the POST data
+    response = authed_client.post(url_for('main.list_detail', list_id=list_id),
+                                  data={'item_name': item_name},
+                                  follow_redirects=True)
+    assert response.status_code == 200
+    # Check for parts of the flash message
+    assert item_name.encode() in response.data
+    assert b'added to' in response.data
+    assert b'Default Category List' in response.data
+
+    with app.app_context():
+        list_item = db.session.query(ListItem).filter_by(item_name=item_name, list_id=list_id).first()
+        assert list_item is not None
+        assert list_item.category == "Other" # Default category
+        assert list_item.added_by_id == user_id

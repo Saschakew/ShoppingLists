@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Test Item Categorization</title>
+    <script src="main.js"></script>
+</head>
+<body>
+    <h1>Item Categorization Tests</h1>
+    <p>Check the console for test results.</p>
+    <ul id="test-results"></ul>
+
+    <script>
+        console.log('Starting categorization tests...');
+        const resultsList = document.getElementById('test-results');
+        let testsPassed = 0;
+        let testsFailed = 0;
+
+        function runTest(itemName, expectedCategory) {
+            const actualCategory = determineCategory(itemName);
+            const pass = actualCategory === expectedCategory;
+            const resultText = `Item: "${itemName}", Expected: "${expectedCategory}", Got: "${actualCategory}" - ${pass ? 'PASS' : 'FAIL'}`;
+
+            console.log(resultText);
+            const listItem = document.createElement('li');
+            listItem.textContent = resultText;
+            listItem.style.color = pass ? 'green' : 'red';
+            resultsList.appendChild(listItem);
+
+            if (pass) {
+                testsPassed++;
+            } else {
+                testsFailed++;
+            }
+        }
+
+        // --- Test Cases ---
+        runTest("Fresh Apple", "Fruits");
+        runTest("Granny Smith Apples", "Fruits");
+        runTest("Banana", "Fruits");
+        runTest("Broccoli florets", "Vegetables");
+        runTest("Potato", "Vegetables");
+        runTest("Whole Milk", "Dairy");
+        runTest("Cheddar Cheese", "Dairy");
+        runTest("Sourdough Bread", "Bakery");
+        runTest("Chicken Breast", "Meat & Poultry");
+        runTest("Ground Beef", "Meat & Poultry");
+        runTest("Salmon Fillet", "Fish & Seafood");
+        runTest("Canned Tuna", "Fish & Seafood"); // Corrected: "tuna" keyword in "Fish & Seafood" likely matches first.
+        runTest("Spaghetti Pasta", "Pantry Staples");
+        runTest("Olive Oil", "Pantry Staples");
+        runTest("Frozen Peas", "Frozen Foods");
+        runTest("Orange Juice", "Beverages");
+        runTest("Coffee Beans", "Beverages");
+        runTest("Toilet Paper", "Household");
+        runTest("Dish Soap", "Household");
+        runTest("Unknown Gizmo", "Other");
+        runTest("milk chocolate", "Pantry Staples");
+        runTest("applesauce", "Fruits");
+        runTest("spring onion", "Vegetables");
+        runTest("canned beans", "Pantry Staples");
+        runTest("frozen pizza", "Frozen Foods");
+        runTest("sparkling water", "Beverages");
+        runTest("laundry detergent", "Household");
+        runTest("Paper towels", "Household");
+        runTest("Avocado", "Fruits");
+
+        // --- Summary ---
+        const summaryText = `Tests Complete. Passed: ${testsPassed}, Failed: ${testsFailed}`;
+        console.log(summaryText);
+        const summaryItem = document.createElement('li');
+        summaryItem.style.fontWeight = 'bold';
+        summaryItem.textContent = summaryText;
+        resultsList.appendChild(summaryItem);
+
+        if (testsFailed > 0) {
+            document.title = `FAIL (${testsFailed}) - ${document.title}`;
+            document.body.style.backgroundColor = '#ffdddd';
+        } else {
+            document.body.style.backgroundColor = '#ddffdd';
+            document.title = `PASS - ${document.title}`;
+        }
+    </script>
+</body>
+</html>

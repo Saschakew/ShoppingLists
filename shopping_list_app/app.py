@@ -10,7 +10,9 @@ from .models import db, User, ShoppingList, ListItem, ListShare
 
 # Import extensions from extensions.py
 from .extensions import login_manager, socketio
+from flask_migrate import Migrate
 
+migrate = Migrate()
 
 def create_app(config_overrides=None):
     """Create and configure an instance of the Flask application."""
@@ -46,6 +48,7 @@ def create_app(config_overrides=None):
     db.init_app(app)
     login_manager.init_app(app)
     socketio.init_app(app, async_mode='eventlet', message_queue=os.environ.get('SOCKETIO_MESSAGE_QUEUE'))
+    migrate.init_app(app, db)
 
     # Configure login manager
     login_manager.login_view = 'auth.login'

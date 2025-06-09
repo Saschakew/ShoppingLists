@@ -39,6 +39,7 @@ class ListItem(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     list_id = db.Column(db.Integer, db.ForeignKey('shopping_list.id'), nullable=False)
     item_name = db.Column(db.String(200), nullable=False)
+    category = db.Column(db.String(100), nullable=True, default='Other') # New field
     is_purchased = db.Column(db.Boolean, default=False, nullable=False)
     added_by_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     added_at = db.Column(db.DateTime, default=datetime.utcnow)

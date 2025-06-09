@@ -66,16 +66,19 @@ def list_detail(list_id):
     if request.method == 'POST':
         # This part handles adding a new item or other POST actions for the list
         item_name = request.form.get('item_name')
+        category = request.form.get('category', 'Other') # Get category, default to 'Other' if not provided
         if item_name:
-            new_item = ListItem(item_name=item_name, list_id=list_instance.id, added_by_id=current_user.id)
+            new_item = ListItem(item_name=item_name, category=category, list_id=list_instance.id, added_by_id=current_user.id)
             db.session.add(new_item)
             db.session.commit()
             flash(f'Item "{item_name}" added to {list_instance.name}.', 'success')
             # Emit event to the specific list room
             socketio.emit('item_added', 
                           {'item': {'id': new_item.id, 
-                                    'name': new_item.item_name, 
-                                    'added_by': new_item.adder.username, 
+                                    'name': new_item.item_name,
+                                    'category': new_item.category,
+                                    'added_by_username': new_item.adder.username, # Keep username for display
+                                    'added_by_id': new_item.added_by_id, # Add ID for logic
                                     'added_at': new_item.added_at.strftime('%Y-%m-%d %H:%M'),
                                     'is_purchased': new_item.is_purchased},
                            'list_id': list_instance.id}, 
@@ -84,8 +87,24 @@ def list_detail(list_id):
         else:
             flash('Item name cannot be empty.', 'danger')
     
-    items = ListItem.query.filter_by(list_id=list_id).order_by(ListItem.added_at.asc()).all()
-    return render_template('list_detail.html', list=list_instance, items=items, current_user=current_user)
+    # Define predefined categories for ordering and ensuring all are listed
+    PREDEFINED_CATEGORIES = [
+        "Fruits", "Vegetables", "Dairy", "Bakery", "Meat & Poultry",
+        "Fish & Seafood", "Pantry Staples", "Frozen Foods",
+        "Beverages", "Household", "Other"
+    ]
+
+    items_by_category = {category: [] for category in PREDEFINED_CATEGORIES}
+    raw_items = ListItem.query.filter_by(list_id=list_id).order_by(ListItem.added_at.asc()).all()
+
+    for item in raw_items:
+        category_key = item.category if item.category in items_by_category else 'Other'
+        items_by_category[category_key].append(item)
+
+    return render_template('list_detail.html', list=list_instance,
+                           items_by_category=items_by_category,
+                           categories_ordered=PREDEFINED_CATEGORIES,
+                           current_user=current_user)
 
 
 @main.route('/item/<int:item_id>/delete', methods=['POST'])
