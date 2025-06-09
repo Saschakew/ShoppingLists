@@ -35,6 +35,10 @@ def create_app(config_overrides=None):
     # Load DATABASE_URL from environment variable, with a default SQLite for development
     app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', 'sqlite:///shopping_list.db')
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+    
+    # Set SERVER_NAME if provided in environment (for subdomain support)
+    if os.environ.get('SERVER_NAME'):
+        app.config['SERVER_NAME'] = os.environ.get('SERVER_NAME')
 
     # Session configuration
     app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=365) # 1 year duration

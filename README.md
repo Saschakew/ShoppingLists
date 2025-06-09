@@ -266,6 +266,80 @@ Static files (CSS, JS, images) are served directly by Nginx instead of Flask, wh
 - For production, consider setting up HTTPS (Let's Encrypt) and a domain name.
 - If using Redis for sessions in production with sensitive data, consider enabling Redis authentication.
 
+## 10. Subdomain Configuration
+
+### AWS Route 53 Setup
+
+1. **Create an A-record for your subdomain:**
+   - In the Route 53 console, go to your hosted zone for `sascha-keweloh.com`
+   - Create a new record with:
+     - Name: `shoppinglists` (this creates `shoppinglists.sascha-keweloh.com`)
+     - Type: A
+     - Value: Your EC2 instance's Elastic IP address
+     - TTL: 300 (or your preferred value)
+
+2. **Verify DNS propagation:**
+   ```bash
+   nslookup shoppinglists.sascha-keweloh.com
+   ```
+   
+### Nginx Configuration for Subdomain
+
+- Edit `/etc/nginx/conf.d/shoppinglist.conf`:
+
+```nginx
+server {
+    listen 80;
+    server_name shoppinglists.sascha-keweloh.com;
+
+    location /static {
+        alias /var/www/shopping_list_app/shopping_list_app/static;
+        expires 30d;
+        add_header Cache-Control "public";
+    }
+
+    location / {
+        proxy_pass http://127.0.0.1:5000;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+    }
+    
+    # WebSocket support for SocketIO
+    location /socket.io {
+        proxy_pass http://127.0.0.1:5000/socket.io;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    }
+}
+```
+
+### Environment Variables for Subdomain
+
+- Update your systemd service file (`/etc/systemd/system/shoppinglist.service`) to include the SERVER_NAME environment variable:
+
+```ini
+[Service]
+# ... other settings ...
+Environment="SERVER_NAME=shoppinglists.sascha-keweloh.com"
+# ... other settings ...
+```
+
+- Restart the service:
+
+```bash
+sudo systemctl daemon-reload
+sudo systemctl restart shoppinglist.service
+```
+
 ---
 
 **For more details, see the comments in the code and configuration files.**
