@@ -54,7 +54,7 @@ WorkingDirectory=/var/www/shopping_list_app
 Environment="PATH=/var/www/shopping_list_app/venv/bin"
 Environment="FLASK_ENV=production"
 Environment="SECRET_KEY=<your-very-long-secret-key>"
-ExecStart=/var/www/shopping_list_app/venv/bin/gunicorn --workers 1 --worker-class eventlet -b 0.0.0.0:5000 shopping_list_app.app:app
+ExecStart=/var/www/shopping_list_app/venv/bin/gunicorn --workers 1 --worker-class eventlet -b 0.0.0.0:5000 "shopping_list_app.app:create_app()"
 Restart=always
 RestartSec=5s
 StandardOutput=append:/var/log/shoppinglist/access.log
@@ -64,6 +64,8 @@ SyslogIdentifier=shoppinglist
 [Install]
 WantedBy=multi-user.target
 ```
+
+> **IMPORTANT:** Note that the ExecStart line uses `"shopping_list_app.app:create_app()"` (with quotes) instead of `shopping_list_app.app:app`. This is because the application uses the factory pattern where the Flask app is created by a function rather than being a global variable.
 
 - Reload and start the service:
 
@@ -162,6 +164,8 @@ Static files (CSS, JS, images) are served directly by Nginx instead of Flask, wh
 
 ## 8. Troubleshooting
 
+### Checking Logs
+
 - **Check Gunicorn logs:**
     ```bash
     sudo journalctl -u shoppinglist.service -e -n 100 --no-pager
@@ -176,13 +180,47 @@ Static files (CSS, JS, images) are served directly by Nginx instead of Flask, wh
     ```bash
     sudo tail -n 50 /var/log/redis/redis.log
     ```
-- **Common issues:**
-    - **502 Bad Gateway after update:** Usually indicates missing dependencies. Run `pip install -r requirements.txt` in your virtual environment.
-    - **Error in logs about missing modules:** Check if you've added new imports without installing the packages.
-    - **Session issues after deployment:** Verify Redis is running and the REDIS_URL environment variable is correctly set.
-    - **Internal Server Error after login:** Ensure `login_user` uses `duration=timedelta(...)`, not an integer.
-    - **Nginx shows default page:** Confirm `shoppinglist.conf` uses `listen 80 default_server;` and `server_name _;`.
-    - **Environment variables** in systemd file must be on a single line.
+
+### Common Issues and Solutions
+
+#### 502 Bad Gateway Errors
+
+1. **Missing Dependencies**
+   ```bash
+   cd /var/www/shopping_list_app
+   source venv/bin/activate
+   pip install -r requirements.txt
+   sudo systemctl restart shoppinglist.service
+   ```
+
+2. **Permission Issues** (status=4/NOPERMISSION in logs)
+   ```bash
+   # Fix ownership of application files
+   sudo chown -R ec2-user:ec2-user /var/www/shopping_list_app
+   
+   # Ensure log directory exists with correct permissions
+   sudo mkdir -p /var/log/shoppinglist
+   sudo chown -R ec2-user:ec2-user /var/log/shoppinglist
+   
+   # Create instance directory if needed
+   mkdir -p /var/www/shopping_list_app/instance
+   chmod 755 /var/www/shopping_list_app/instance
+   
+   sudo systemctl restart shoppinglist.service
+   ```
+
+3. **Implementation Errors** (status=3/NOTIMPLEMENTED in logs)
+   - Check if your app structure changed (e.g., module names, entry point)
+   - Verify the ExecStart path in the systemd service file matches your current app structure
+   - Check for syntax errors in your Python code
+
+#### Other Common Issues
+
+- **Error in logs about missing modules:** Check if you've added new imports without installing the packages.
+- **Session issues after deployment:** Verify Redis is running and the REDIS_URL environment variable is correctly set.
+- **Internal Server Error after login:** Ensure `login_user` uses `duration=timedelta(...)`, not an integer.
+- **Nginx shows default page:** Confirm `shoppinglist.conf` uses `listen 80 default_server;` and `server_name _;`.
+- **Environment variables** in systemd file must be on a single line.
 
 ## 9. Security Notes
 - Do not expose your `SECRET_KEY`, database credentials, or Redis URL publicly.
@@ -215,3 +253,39 @@ To run the ShoppingLists application locally for development:
    - Debug mode enabled for detailed error messages
    - Interactive debugger for examining exceptions
    - Automatic reloading when code changes
+
+## 10. Git Workflow and Database Files
+
+The SQLite database file (`instance/shopping_list.db`) is ignored in `.gitignore` to prevent conflicts between different development environments. However, if you encounter the following error when pulling changes:
+
+```
+error: Your local changes to the following files would be overwritten by merge:
+        instance/shopping_list.db
+Please commit your changes or stash them before you merge.
+Aborting
+```
+
+Use one of these solutions:
+
+1. **Remove the database file from git tracking:**
+   ```bash
+   git rm --cached instance/shopping_list.db
+   git commit -m "Stop tracking database file"
+   git pull
+   ```
+
+   If you encounter a merge conflict after this step:
+   ```bash
+   # If you see: CONFLICT (modify/delete): instance/shopping_list.db deleted in HEAD and modified in [commit]...
+   git rm instance/shopping_list.db
+   git commit -m "Resolve merge conflict by removing database file"
+   ```
+
+2. **Stash your changes temporarily:**
+   ```bash
+   git stash
+   git pull
+   git stash pop  # Optional: only if you need your local DB changes
+   ```
+
+3. **For future reference:** Never commit database files to the repository. The application will create a new database file automatically if one doesn't exist.
