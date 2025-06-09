@@ -10,7 +10,9 @@ from .models import db, User, ShoppingList, ListItem, ListShare
 
 # Import extensions from extensions.py
 from .extensions import login_manager, socketio
+from flask_migrate import Migrate
 
+migrate = Migrate()
 
 def create_app(config_overrides=None):
     """Create and configure an instance of the Flask application."""
@@ -46,6 +48,7 @@ def create_app(config_overrides=None):
     db.init_app(app)
     login_manager.init_app(app)
     socketio.init_app(app, async_mode='eventlet', message_queue=os.environ.get('SOCKETIO_MESSAGE_QUEUE'))
+    migrate.init_app(app, db)
 
     # Configure login manager
     login_manager.login_view = 'auth.login'
@@ -66,7 +69,26 @@ def create_app(config_overrides=None):
     # For production, use migrations (e.g., Flask-Migrate) and manage schema changes outside app startup.
     if os.environ.get('FLASK_ENV') != 'production':
         with app.app_context():
-            db.create_all()
+            # First check if the database exists
+            try:
+                db.create_all()
+                # Check if we need to add the favorite_list_id column
+                from sqlalchemy import inspect
+                inspector = inspect(db.engine)
+                columns = [column['name'] for column in inspector.get_columns('user')]
+                if 'favorite_list_id' not in columns:
+                    print("Adding missing favorite_list_id column to user table...")
+                    db.engine.execute('ALTER TABLE user ADD COLUMN favorite_list_id INTEGER REFERENCES shopping_list(id)')
+                    print("Column added successfully!")
+            except Exception as e:
+                print(f"Database initialization error: {e}")
+                # If there's an error, try to recreate the tables
+                try:
+                    db.drop_all()
+                    db.create_all()
+                    print("Database recreated successfully!")
+                except Exception as e:
+                    print(f"Failed to recreate database: {e}")
 
     return app
 

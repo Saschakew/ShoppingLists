@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, redirect, url_for, request, flash
+from flask import Blueprint, render_template, redirect, url_for, request, flash, jsonify
 from flask_login import login_required, current_user
 from .models import db, ShoppingList, ListItem, ListShare, User
 from .extensions import socketio # Import socketio from extensions.py
@@ -10,6 +10,9 @@ def index():
     # This will be the landing page. 
     # If user is logged in, maybe redirect to dashboard, or show a generic home page.
     if current_user.is_authenticated:
+        # If user has a favorite list, redirect to it
+        if current_user.favorite_list_id:
+            return redirect(url_for('main.list_detail', list_id=current_user.favorite_list_id))
         return redirect(url_for('main.dashboard'))
     return render_template('index.html') # We'll need to create index.html
 
@@ -66,16 +69,19 @@ def list_detail(list_id):
     if request.method == 'POST':
         # This part handles adding a new item or other POST actions for the list
         item_name = request.form.get('item_name')
+        category = request.form.get('category', 'Other') # Get category, default to 'Other' if not provided
         if item_name:
-            new_item = ListItem(item_name=item_name, list_id=list_instance.id, added_by_id=current_user.id)
+            new_item = ListItem(item_name=item_name, category=category, list_id=list_instance.id, added_by_id=current_user.id)
             db.session.add(new_item)
             db.session.commit()
             flash(f'Item "{item_name}" added to {list_instance.name}.', 'success')
             # Emit event to the specific list room
             socketio.emit('item_added', 
                           {'item': {'id': new_item.id, 
-                                    'name': new_item.item_name, 
-                                    'added_by': new_item.adder.username, 
+                                    'name': new_item.item_name,
+                                    'category': new_item.category,
+                                    'added_by_username': new_item.adder.username, # Keep username for display
+                                    'added_by_id': new_item.added_by_id, # Add ID for logic
                                     'added_at': new_item.added_at.strftime('%Y-%m-%d %H:%M'),
                                     'is_purchased': new_item.is_purchased},
                            'list_id': list_instance.id}, 
@@ -84,8 +90,24 @@ def list_detail(list_id):
         else:
             flash('Item name cannot be empty.', 'danger')
     
-    items = ListItem.query.filter_by(list_id=list_id).order_by(ListItem.added_at.asc()).all()
-    return render_template('list_detail.html', list=list_instance, items=items, current_user=current_user)
+    # Define predefined categories for ordering and ensuring all are listed
+    PREDEFINED_CATEGORIES = [
+        "Fruits", "Vegetables", "Dairy", "Bakery", "Meat & Poultry",
+        "Fish & Seafood", "Pantry Staples", "Frozen Foods",
+        "Beverages", "Household", "Other"
+    ]
+
+    items_by_category = {category: [] for category in PREDEFINED_CATEGORIES}
+    raw_items = ListItem.query.filter_by(list_id=list_id).order_by(ListItem.added_at.asc()).all()
+
+    for item in raw_items:
+        category_key = item.category if item.category in items_by_category else 'Other'
+        items_by_category[category_key].append(item)
+
+    return render_template('list_detail.html', list=list_instance,
+                           items_by_category=items_by_category,
+                           categories_ordered=PREDEFINED_CATEGORIES,
+                           current_user=current_user)
 
 
 @main.route('/item/<int:item_id>/delete', methods=['POST'])
@@ -167,3 +189,30 @@ def share_list(list_id):
     db.session.commit()
     flash(f'List "{list_to_share.name}" shared with {username_to_share_with}.', 'success')
     return redirect(url_for('main.share_list_page', list_id=list_id))
+
+
+@main.route('/list/<int:list_id>/favorite', methods=['POST'])
+@login_required
+def set_favorite_list(list_id):
+    list_instance = ShoppingList.query.get_or_404(list_id)
+    
+    # Check if the current user has access to this list
+    is_owner = list_instance.owner_id == current_user.id
+    is_shared_with_user = ListShare.query.filter_by(list_id=list_id, user_id=current_user.id).first() is not None
+    
+    if not (is_owner or is_shared_with_user):
+        flash('You do not have access to this list.', 'danger')
+        return redirect(url_for('main.dashboard'))
+    
+    # Toggle favorite status
+    if current_user.favorite_list_id == list_id:
+        # If this list is already the favorite, remove it as favorite
+        current_user.favorite_list_id = None
+        flash(f'Removed "{list_instance.name}" from favorites.', 'info')
+    else:
+        # Set this list as the favorite
+        current_user.favorite_list_id = list_id
+        flash(f'Set "{list_instance.name}" as your favorite list.', 'success')
+    
+    db.session.commit()
+    return redirect(url_for('main.list_detail', list_id=list_id))
