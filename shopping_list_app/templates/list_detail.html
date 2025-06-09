@@ -104,7 +104,9 @@
 
 {% block scripts %}
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.min.js"></script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/offline-styles.css') }}">
     {# main.js is assumed to be loaded via base.html or similar, providing determineCategory #}
+    <script src="{{ url_for('static', filename='js/offline-manager.js') }}"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             // Use proper JSON serialization for Flask variables
@@ -133,8 +135,62 @@
             const pathParts = window.location.pathname.split('/');
             const listId = parseInt(pathParts[pathParts.length - 1]);
             
+            // Initialize the offline manager
+            const offlineManager = new OfflineManager(listId, currentUserId);
+            
             socket.on('connect', function() {
                 socket.emit('join_list_room', { list_id: listId });
+                console.log('Connected to socket and joined list room:', listId);
+            });
+
+            // Handle socket connection errors
+            socket.on('connect_error', function(error) {
+                console.log('Socket connection error:', error);
+                offlineManager.handleOnlineStatusChange(false);
+            });
+
+            // Handle socket disconnects
+            socket.on('disconnect', function(reason) {
+                console.log('Socket disconnected:', reason);
+                offlineManager.handleOnlineStatusChange(false);
+            });
+
+            // Handle socket reconnects
+            socket.on('reconnect', function(attemptNumber) {
+                console.log('Socket reconnected after', attemptNumber, 'attempts');
+                offlineManager.handleOnlineStatusChange(true);
+            });
+
+            // Handle page visibility changes
+            document.addEventListener('visibilitychange', function() {
+                if (document.visibilityState === 'visible') {
+                    console.log('Page became visible, checking for updates...');
+                    // Check if we're online
+                    if (navigator.onLine) {
+                        // If socket is connected, request updates since last sync
+                        if (socket.connected) {
+                            socket.emit('join_list_room', { list_id: listId });
+                            offlineManager.requestUpdatesSinceLastSync();
+                        } else {
+                            // If socket is disconnected, try to reconnect
+                            socket.connect();
+                            socket.once('connect', function() {
+                                offlineManager.requestUpdatesSinceLastSync();
+                            });
+                        }
+                    }
+                }
+            });
+
+            // Handle online/offline browser events
+            window.addEventListener('online', function() {
+                console.log('Browser went online');
+                offlineManager.handleOnlineStatusChange(true);
+            });
+
+            window.addEventListener('offline', function() {
+                console.log('Browser went offline');
+                offlineManager.handleOnlineStatusChange(false);
             });
 
             const emptyListMessage = document.getElementById('empty-list-message');
@@ -266,6 +322,23 @@
                         if (typeof determineCategory === 'function') {
                             const category = determineCategory(itemName);
                             itemCategoryInput.value = category;
+                            
+                            // If we're offline, handle the submission locally
+                            if (!navigator.onLine || !socket.connected) {
+                                event.preventDefault(); // Prevent the form from submitting
+                                
+                                // Queue the item to be added when back online
+                                const tempId = offlineManager.queueAddItem(itemName, category);
+                                
+                                // Add the item to the UI locally
+                                offlineManager.addItemLocally(itemName, category, tempId);
+                                
+                                // Clear the form
+                                itemNameInput.value = '';
+                                
+                                // Show a notification
+                                offlineManager.showNotification(`Item "${itemName}" added locally. Will sync when back online.`, 'warning');
+                            }
                         } else {
                             console.error('determineCategory function is not defined. Make sure main.js is loaded and the function is global or properly namespaced.');
                         }

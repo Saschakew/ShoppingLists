@@ -72,10 +72,10 @@ def create_app(config_overrides=None):
     db.init_app(app)
     login_manager.init_app(app)
     
-    # Only initialize Flask-Session if not in development mode on Windows
-    if not (IS_WINDOWS and os.environ.get('FLASK_ENV') == 'development'):
+    # Only initialize Flask-Session if not in development mode on Windows AND not testing
+    if not (IS_WINDOWS and os.environ.get('FLASK_ENV') == 'development') and not app.config.get('TESTING', False):
         Session(app) # Initialize Flask-Session
-        
+
     socketio.init_app(app, async_mode='eventlet', message_queue=os.environ.get('SOCKETIO_MESSAGE_QUEUE'))
     migrate.init_app(app, db)
 
@@ -107,14 +107,11 @@ def create_app(config_overrides=None):
 
     return app
 
-# Create the app instance outside of __name__ == '__main__' check
-# This ensures it's available for module imports
-app = create_app()
-
+# Only create the app instance if running directly (not on import)
 if __name__ == '__main__':
+    app = create_app()
     # Use socketio.run for development to enable WebSocket support
     socketio.run(app, debug=True, host='0.0.0.0', port=5000) # Pass debug to socketio.run
-
 
 @socketio.on('join_list_room')
 def handle_join_list_room(data):

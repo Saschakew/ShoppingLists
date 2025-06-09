@@ -18,7 +18,8 @@ def app():
         'SQLALCHEMY_DATABASE_URI': 'sqlite:///:memory:',
         'WTF_CSRF_ENABLED': False, # Disable CSRF for tests
         'LOGIN_DISABLED': False, # Ensure login is active for testing auth
-        'SERVER_NAME': 'localhost.test' # Required for url_for to work without active request context in some cases
+        'SERVER_NAME': 'localhost.test', # Required for url_for to work without active request context in some cases
+        'SESSION_TYPE': 'null' # Disable Flask-Session for tests to avoid eventlet/filesystem issues
     })
 
     # Establish an application context before creating the tables.

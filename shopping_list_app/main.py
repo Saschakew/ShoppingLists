@@ -2,6 +2,8 @@ from flask import Blueprint, render_template, redirect, url_for, request, flash,
 from flask_login import login_required, current_user
 from .models import db, ShoppingList, ListItem, ListShare, User
 from .extensions import socketio # Import socketio from extensions.py
+from datetime import datetime
+import time
 
 main = Blueprint('main', __name__)
 
@@ -215,4 +217,155 @@ def set_favorite_list(list_id):
         flash(f'Set "{list_instance.name}" as your favorite list.', 'success')
     
     db.session.commit()
-    return redirect(url_for('main.list_detail', list_id=list_id))
+    return redirect(url_for('main.dashboard'))
+
+
+@main.route('/api/list/<int:list_id>/updates', methods=['GET'])
+@login_required
+def get_list_updates_since(list_id):
+    """API endpoint to get updates to a list since a specific timestamp"""
+    list_instance = ShoppingList.query.get_or_404(list_id)
+
+    # Check if the current user has access to this list
+    is_owner = list_instance.owner_id == current_user.id
+    is_shared_with_user = ListShare.query.filter_by(list_id=list_id, user_id=current_user.id).first() is not None
+    
+    if not (is_owner or is_shared_with_user):
+        return jsonify({'error': 'Access denied'}), 403
+
+    # Get the 'since' parameter (timestamp in milliseconds)
+    try:
+        since_timestamp = int(request.args.get('since', 0)) / 1000  # Convert from milliseconds to seconds
+        since_datetime = datetime.fromtimestamp(since_timestamp)
+    except (ValueError, TypeError):
+        return jsonify({'error': 'Invalid timestamp'}), 400
+
+    # Get items added or modified since the timestamp
+    new_items = ListItem.query.filter(
+        ListItem.list_id == list_id,
+        ListItem.added_at > since_datetime
+    ).all()
+
+    # Format the items for JSON response
+    items_data = []
+    for item in new_items:
+        items_data.append({
+            'id': item.id,
+            'item_name': item.item_name,  # Changed 'name' to 'item_name' to match model
+            'category': item.category,
+            'added_by_username': item.adder.username,
+            'added_by_id': item.added_by_id,
+            'added_at': item.added_at.strftime('%Y-%m-%d %H:%M'),
+            'is_purchased': item.is_purchased,
+            'change_type': 'added'
+        })
+
+    # In a more complex system, we would also track deletions in a separate table
+    # For now, we'll just return the new items
+
+    return jsonify({
+        'success': True,
+        'timestamp': int(time.time() * 1000),  # Current server time in milliseconds
+        'items': items_data  # Changed 'changes' to 'items' to match test expectations
+    })
+
+
+@main.route('/api/list/<int:list_id>/add_item', methods=['POST'])
+@login_required
+def api_add_item(list_id):
+    """API endpoint to add an item to a list"""
+    list_instance = ShoppingList.query.get_or_404(list_id)
+
+    # Check if the current user has access to this list
+    is_owner = list_instance.owner_id == current_user.id
+    is_shared_with_user = ListShare.query.filter_by(list_id=list_id, user_id=current_user.id).first() is not None
+    
+    if not (is_owner or is_shared_with_user):
+        return jsonify({'success': False, 'error': 'Access denied'}), 403
+
+    # Get item data from JSON request
+    data = request.get_json()
+    if not data or 'item_name' not in data:
+        return jsonify({'success': False, 'error': 'Missing item_name'}), 400
+
+    item_name = data.get('item_name')
+    category = data.get('category', 'Other')  # Default to 'Other' if not specified
+    
+    # Create new item
+    new_item = ListItem(
+        item_name=item_name,
+        category=category,
+        list_id=list_instance.id,
+        added_by_id=current_user.id
+    )
+    
+    db.session.add(new_item)
+    db.session.commit()
+    
+    # Emit socket event for real-time updates
+    socketio.emit('item_added', {
+        'item': {
+            'id': new_item.id,
+            'item_name': new_item.item_name,
+            'category': new_item.category,
+            'added_by_username': current_user.username,
+            'added_by_id': current_user.id,
+            'added_at': new_item.added_at.strftime('%Y-%m-%d %H:%M'),
+            'is_purchased': new_item.is_purchased
+        },
+        'list_id': list_instance.id
+    }, room=f'list_{list_instance.id}')
+    
+    return jsonify({
+        'success': True,
+        'item': {
+            'id': new_item.id,
+            'item_name': new_item.item_name,
+            'category': new_item.category,
+            'added_by_username': current_user.username,
+            'added_by_id': current_user.id,
+            'added_at': new_item.added_at.strftime('%Y-%m-%d %H:%M'),
+            'is_purchased': new_item.is_purchased
+        }
+    })
+
+
+@main.route('/api/list/<int:list_id>/delete_item', methods=['POST'])
+@login_required
+def api_delete_item(list_id):
+    """API endpoint to delete an item from a list"""
+    list_instance = ShoppingList.query.get_or_404(list_id)
+
+    # Check if the current user has access to this list
+    is_owner = list_instance.owner_id == current_user.id
+    is_shared_with_user = ListShare.query.filter_by(list_id=list_id, user_id=current_user.id).first() is not None
+    
+    if not (is_owner or is_shared_with_user):
+        return jsonify({'success': False, 'error': 'Access denied'}), 403
+
+    # Get item_id from JSON request
+    data = request.get_json()
+    if not data or 'item_id' not in data:
+        return jsonify({'success': False, 'error': 'Missing item_id'}), 400
+
+    item_id = data.get('item_id')
+    
+    # Find the item
+    item = ListItem.query.filter_by(id=item_id, list_id=list_id).first()
+    if not item:
+        return jsonify({'success': False, 'error': 'Item not found'}), 404
+    
+    # Delete the item
+    db.session.delete(item)
+    db.session.commit()
+    
+    # Emit socket event for real-time updates
+    socketio.emit('item_deleted', {
+        'item_id': item_id,
+        'list_id': list_instance.id
+    }, room=f'list_{list_instance.id}')
+    
+    return jsonify({
+        'success': True,
+        'item_id': item_id
+    })

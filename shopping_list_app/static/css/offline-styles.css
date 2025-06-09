@@ -1,0 +1,154 @@
+/* Offline Functionality Styles */
+
+/* Connection status indicator */
+/* #connection-status { (Deprecated, replaced by nav indicator)
+    position: fixed;
+    top: 10px;
+    right: 10px;
+    padding: 5px 10px;
+    border-radius: 4px;
+    font-size: 14px;
+    font-weight: bold;
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+} */
+
+.connection-status-nav {
+    display: flex;
+    align-items: center;
+    margin-left: auto;
+    gap: 6px;
+    font-size: 14px;
+    font-weight: 500;
+    min-width: 70px;
+}
+.status-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    display: inline-block;
+    margin-right: 6px;
+    background: #4CAF50;
+    transition: background 0.3s;
+}
+.status-online {
+    background: #4CAF50 !important;
+}
+.status-offline {
+    background: #F44336 !important;
+}
+.status-text {
+    font-size: 14px;
+    font-weight: 500;
+    color: #333;
+    transition: color 0.3s;
+}
+.status-text.offline {
+    color: #F44336;
+}
+.status-text.online {
+    color: #4CAF50;
+}
+
+.status-online {
+    background-color: #4CAF50;
+    color: white;
+}
+
+.status-offline {
+    background-color: #F44336;
+    color: white;
+}
+
+/* Queue badge for pending changes */
+.queue-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #FF9800;
+    color: white;
+    border-radius: 50%;
+    width: 20px;
+    height: 20px;
+    font-size: 12px;
+    margin-left: 5px;
+}
+
+/* Offline item styling */
+.offline-item {
+    opacity: 0.8;
+    border-left: 3px solid #FF9800 !important;
+}
+
+.offline-indicator {
+    font-size: 12px;
+    color: #FF9800;
+    font-style: italic;
+    margin-left: 5px;
+}
+
+/* Notification styling */
+.floating-flashes {
+    position: fixed;
+    top: 60px;
+    right: 10px;
+    z-index: 1000;
+    max-width: 300px;
+}
+
+.alert {
+    padding: 10px;
+    margin-bottom: 10px;
+    border-radius: 4px;
+    opacity: 1;
+    transition: opacity 0.5s;
+}
+
+.alert-info {
+    background-color: #2196F3;
+    color: white;
+}
+
+.alert-success {
+    background-color: #4CAF50;
+    color: white;
+}
+
+.alert-warning {
+    background-color: #FF9800;
+    color: white;
+}
+
+.alert-error {
+    background-color: #F44336;
+    color: white;
+}
+
+/* Fade out animation for alerts */
+@keyframes fadeOut {
+    from { opacity: 1; }
+    to { opacity: 0; }
+}
+
+.fade-out {
+    animation: fadeOut 0.5s ease 4.5s forwards;
+}
+
+/* Syncing animation */
+.syncing-indicator {
+    display: inline-block;
+    margin-left: 5px;
+}
+
+.syncing-indicator:after {
+    content: '...';
+    animation: ellipsis 1.5s infinite;
+}
+
+@keyframes ellipsis {
+    0% { content: '.'; }
+    33% { content: '..'; }
+    66% { content: '...'; }
+    100% { content: '.'; }
+}
