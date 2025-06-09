@@ -2,20 +2,20 @@
 
 // Define grocery categories and associated keywords
 const groceryCategories = {
-  "Fruits": ["apple", "banana", "orange", "berries", "grape", "mango", "pineapple", "avocado", "peach", "plum"],
-  "Vegetables": ["carrot", "broccoli", "spinach", "onion", "garlic", "potato", "tomato", "lettuce", "cabbage", "pepper", "cucumber", "zucchini", "celery"],
-  "Dairy": ["milk", "cheese", "yogurt", "butter", "cream", "sour cream", "cottage cheese"],
-  "Bakery": ["bread", "rolls", "bagel", "croissant", "muffin", "cake", "donuts", "cookies", "pie"],
-  "Meat & Poultry": ["chicken", "beef", "pork", "turkey", "sausage", "bacon", "lamb", "ham"],
-  "Fish & Seafood": ["salmon", "tuna", "shrimp", "cod", "tilapia", "crab", "lobster"],
-  "Pantry Staples": ["pasta", "rice", "flour", "sugar", "oil", "vinegar", "spices", "herbs", "canned goods", "beans", "lentils", "cereal", "oats", "jam", "honey", "peanut butter", "nuts", "seeds", "broth", "soup"],
-  "Frozen Foods": ["ice cream", "frozen vegetables", "frozen fruit", "frozen meals", "pizza", "fries"],
-  "Beverages": ["water", "juice", "soda", "tea", "coffee", "milkshake", "sports drink", "beer", "wine"], // Note: 'milk' is also in Dairy, consider context or prioritize
-  "Household": ["toilet paper", "paper towels", "soap", "shampoo", "detergent", "cleaning supplies", "trash bags", "foil", "plastic wrap"],
+  "Fruits": ["apple", "apfel", "banana", "banane", "orange", "beeren", "berries", "grape", "traube", "mango", "pineapple", "ananas", "avocado", "peach", "pfirsich", "plum", "pflaume", "strawberry", "erdbeere", "raspberry", "himbeere", "blueberry", "blaubeere", "heidelbeere", "kiwi", "lemon", "zitrone", "lime", "limette"],
+  "Vegetables": ["carrot", "karotte", "möhre", "broccoli", "brokkoli", "spinach", "spinat", "onion", "zwiebel", "garlic", "knoblauch", "potato", "kartoffel", "tomato", "tomate", "lettuce", "salat", "kopfsalat", "cabbage", "kohl", "pepper", "paprika", "cucumber", "gurke", "zucchini", "celery", "sellerie", "corn", "mais", "mushroom", "pilz", "champignon", "pea", "erbse", "green beans", "grüne bohnen"],
+  "Dairy": ["milk", "milch", "cheese", "käse", "yogurt", "joghurt", "butter", "cream", "sahne", "quark", "sour cream", "saure sahne", "schmand", "cottage cheese", "hüttenkäse", "körniger frischkäse"],
+  "Bakery": ["bread", "brot", "rolls", "brötchen", "bagel", "croissant", "muffin", "cake", "kuchen", "donuts", "donut", "cookies", "kekse", "plätzchen", "pie", "obstkuchen"],
+  "Meat & Poultry": ["chicken", "huhn", "hähnchen", "beef", "rindfleisch", "pork", "schweinefleisch", "turkey", "pute", "putenfleisch", "sausage", "wurst", "würstchen", "bacon", "speck", "lamb", "lamm", "lammfleisch", "ham", "schinken", "mince", "hackfleisch", "ground meat"],
+  "Fish & Seafood": ["salmon", "lachs", "tuna", "thunfisch", "shrimp", "garnele", "krabbe", "cod", "kabeljau", "dorsch", "tilapia", "crab", "krebs", "lobster", "hummer", "herring", "hering", "trout", "forelle"],
+  "Pantry Staples": ["pasta", "nudeln", "rice", "reis", "flour", "mehl", "sugar", "zucker", "oil", "öl", "vinegar", "essig", "spices", "gewürze", "herbs", "kräuter", "canned goods", "konserven", "dosenware", "beans", "bohnen", "lentils", "linsen", "cereal", "müsli", "cornflakes", "getreideflocken", "oats", "haferflocken", "jam", "marmelade", "honey", "honig", "peanut butter", "erdnussbutter", "nuts", "nüsse", "seeds", "samen", "kerne", "broth", "brühe", "soup", "suppe", "chocolate", "schokolade", "ketchup", "mustard", "senf", "mayonnaise", "mayo"],
+  "Frozen Foods": ["ice cream", "eis", "eiscreme", "frozen vegetables", "tiefkühlgemüse", "tk-gemüse", "frozen fruit", "tiefkühlobst", "tk-obst", "frozen meals", "fertiggerichte", "tk-fertiggerichte", "pizza", "tiefkühlpizza", "tk-pizza", "fries", "pommes", "frozen fish", "tk-fisch"],
+  "Beverages": ["water", "wasser", "juice", "saft", "soda", "limo", "limonade", "tea", "tee", "coffee", "kaffee", "milkshake", "milchshake", "sports drink", "sportgetränk", "isodrink", "beer", "bier", "wine", "wein", "cola"],
+  "Household": ["toilet paper", "toilettenpapier", "klopapier", "paper towels", "küchenrolle", "papiertücher", "soap", "seife", "shampoo", "detergent", "waschmittel", "spülmittel", "cleaning supplies", "putzmittel", "reinigungsmittel", "trash bags", "müllbeutel", "foil", "alufolie", "plastic wrap", "frischhaltefolie", "batteries", "batterien", "light bulb", "glühbirne"],
   "Other": [] // Fallback category
 };
 
-// Function to determine category (will be implemented in a later step)
+// Function to determine category
 function determineCategory(itemName) {
   const lowerItemName = itemName.toLowerCase();
   for (const category in groceryCategories) {

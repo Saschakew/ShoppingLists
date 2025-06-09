@@ -34,7 +34,7 @@
             }
         }
 
-        // --- Test Cases ---
+        // --- English Test Cases ---
         runTest("Fresh Apple", "Fruits");
         runTest("Granny Smith Apples", "Fruits");
         runTest("Banana", "Fruits");
@@ -46,7 +46,7 @@
         runTest("Chicken Breast", "Meat & Poultry");
         runTest("Ground Beef", "Meat & Poultry");
         runTest("Salmon Fillet", "Fish & Seafood");
-        runTest("Canned Tuna", "Fish & Seafood"); // Corrected: "tuna" keyword in "Fish & Seafood" likely matches first.
+        runTest("Canned Tuna", "Fish & Seafood");
         runTest("Spaghetti Pasta", "Pantry Staples");
         runTest("Olive Oil", "Pantry Staples");
         runTest("Frozen Peas", "Frozen Foods");
@@ -64,6 +64,47 @@
         runTest("laundry detergent", "Household");
         runTest("Paper towels", "Household");
         runTest("Avocado", "Fruits");
+
+        // --- German Test Cases ---
+        console.log('--- Starting German Test Cases ---');
+        runTest("Apfel", "Fruits");
+        runTest("Bananen", "Fruits"); // Plural
+        runTest("Trauben", "Fruits"); // Grapes (plural)
+        runTest("Erdbeeren", "Fruits"); // Strawberries (plural)
+        runTest("Kartoffel", "Vegetables");
+        runTest("Zwiebeln", "Vegetables"); // Plural
+        runTest("Knoblauchzehe", "Vegetables"); // Garlic clove
+        runTest("Gurkensalat", "Vegetables"); // Cucumber salad (gurke should match)
+        runTest("Milch", "Dairy");
+        runTest("Käse", "Dairy"); // Umlaut
+        runTest("Joghurt", "Dairy");
+        runTest("Brot", "Bakery");
+        runTest("Brötchen", "Bakery"); // Bread rolls
+        runTest("Kuchen", "Bakery"); // Cake
+        runTest("Hähnchenbrust", "Meat & Poultry");
+        runTest("Rindfleisch", "Meat & Poultry");
+        runTest("Schweinefleisch", "Meat & Poultry"); // Pork
+        runTest("Lachsfilet", "Fish & Seafood");
+        runTest("Thunfischkonserve", "Fish & Seafood"); // "Thunfisch" is keyword
+        runTest("Garnelen", "Fish & Seafood"); // Shrimp/Prawns
+        runTest("Nudeln", "Pantry Staples"); // Plural
+        runTest("Reis", "Pantry Staples");
+        runTest("Mehl", "Pantry Staples"); // Flour
+        runTest("Zucker", "Pantry Staples");
+        runTest("Olivenöl", "Pantry Staples"); // Olive oil
+        runTest("Tiefkühlpizza", "Frozen Foods"); // Compound word
+        runTest("Eis", "Frozen Foods"); // Ice cream
+        runTest("Tk-Gemüse", "Frozen Foods"); // Common abbreviation for Tiefkühlgemüse
+        runTest("Orangensaft", "Beverages");
+        runTest("Kaffee", "Beverages");
+        runTest("Wasserflasche", "Beverages"); // Bottled water
+        runTest("Bier", "Beverages");
+        runTest("Toilettenpapier", "Household");
+        runTest("Spülmittel", "Household"); // Dish soap
+        runTest("Waschmittel", "Household"); // Laundry detergent
+        runTest("Zahnpasta", "Other"); // Toothpaste - no specific keyword in Household, should go to Other
+        runTest("Alufolie", "Household");
+
 
         // --- Summary ---
         const summaryText = `Tests Complete. Passed: ${testsPassed}, Failed: ${testsFailed}`;
