@@ -5,7 +5,14 @@
 {% block content %}
     <div class="list-header">
         <h1>Share {{ list.name }}</h1>
-        <a href="{{ url_for('main.list_detail', list_id=list.id) }}" class="back-link">Back to List</a>
+        <div class="list-actions">
+            <a href="{{ url_for('main.list_detail', list_id=list.id) }}" class="back-link">Back to List</a>
+            {% if is_owner %}
+            <button type="button" class="btn btn-danger" data-toggle="modal" data-target="#deleteListModal">
+                Delete List
+            </button>
+            {% endif %}
+        </div>
     </div>
 
     {# Display Flashed Messages #}
@@ -46,4 +53,29 @@
             {% endif %}
         </div>
     </div>
+
+    {% if is_owner %}
+    <!-- Delete List Confirmation Modal -->
+    <div class="modal fade" id="deleteListModal" tabindex="-1" role="dialog" aria-labelledby="deleteListModalLabel" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="deleteListModalLabel">Confirm Delete</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    Are you sure you want to delete the list "{{ list.name }}"? This action cannot be undone.
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                    <form method="POST" action="{{ url_for('main.delete_list', list_id=list.id) }}">
+                        <button type="submit" class="btn btn-danger">Delete List</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
 {% endblock %}

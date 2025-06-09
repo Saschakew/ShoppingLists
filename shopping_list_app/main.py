@@ -106,10 +106,13 @@ def list_detail(list_id):
         category_key = item.category if item.category in items_by_category else 'Other'
         items_by_category[category_key].append(item)
 
-    return render_template('list_detail.html', list=list_instance,
-                           items_by_category=items_by_category,
+    return render_template('list_detail.html', 
+                           list=list_instance, 
+                           items_by_category=items_by_category, 
                            categories_ordered=PREDEFINED_CATEGORIES,
-                           current_user=current_user)
+                           current_user=current_user, 
+                           is_owner=is_owner,
+                           is_shared_with_user=is_shared_with_user)
 
 
 @main.route('/item/<int:item_id>/delete', methods=['POST'])
@@ -153,7 +156,7 @@ def share_list_page(list_id):
     # Only the owner can see the share page with sharing controls
     can_share = is_owner
     
-    return render_template('share_list.html', list=list_to_share, can_share=can_share)
+    return render_template('share_list.html', list=list_to_share, can_share=can_share, is_owner=is_owner)
 
 @main.route('/list/<int:list_id>/share', methods=['POST'])
 @login_required
@@ -428,3 +431,29 @@ def api_delete_item(list_id):
         'success': True,
         'item_id': item_id
     })
+
+
+@main.route('/list/<int:list_id>/delete', methods=['POST'])
+@login_required
+def delete_list(list_id):
+    """Delete a shopping list"""
+    list_instance = ShoppingList.query.get_or_404(list_id)
+    
+    # Only the owner can delete a list
+    if list_instance.owner_id != current_user.id:
+        flash('You do not have permission to delete this list.', 'danger')
+        return redirect(url_for('main.share_list_page', list_id=list_id))
+    
+    list_name = list_instance.name
+    
+    # Delete the list (cascade will handle items and shares)
+    db.session.delete(list_instance)
+    
+    # If this was the user's favorite list, unset it
+    if current_user.favorite_list_id == list_id:
+        current_user.favorite_list_id = None
+    
+    db.session.commit()
+    
+    flash(f'List "{list_name}" has been deleted.', 'success')
+    return redirect(url_for('main.dashboard'))

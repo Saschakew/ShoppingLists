@@ -697,3 +697,65 @@ main {
         max-width: 1140px;
     }
 }
+
+/* List Header and Actions Styling */
+.list-header {
+    display: flex;
+    flex-direction: column;
+    margin-bottom: var(--spacing-md);
+    align-items: flex-start;
+}
+
+.list-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--spacing-md);
+    margin-top: var(--spacing-sm);
+}
+
+.list-actions .btn-danger {
+    background-color: var(--danger-color);
+    border-color: var(--danger-color);
+    color: var(--text-color-light);
+}
+
+.list-actions .btn-danger:hover {
+    background-color: #e02d23;
+    border-color: #e02d23;
+}
+
+/* Modal Styling */
+.modal-content {
+    border-radius: var(--border-radius-md);
+    box-shadow: var(--shadow-md);
+}
+
+.modal-header {
+    border-bottom: 1px solid var(--border-color);
+    padding: var(--spacing-md) var(--spacing-lg);
+}
+
+.modal-body {
+    padding: var(--spacing-lg);
+}
+
+.modal-footer {
+    border-top: 1px solid var(--border-color);
+    padding: var(--spacing-md) var(--spacing-lg);
+    display: flex;
+    justify-content: flex-end;
+    gap: var(--spacing-md);
+}
+
+/* Desktop Overrides for List Header */
+@media (min-width: 768px) {
+    .list-header {
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: center;
+    }
+    
+    .list-actions {
+        margin-top: 0;
+    }
+}

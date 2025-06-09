@@ -47,7 +47,7 @@
                                 <span class="item-name">{{ item.item_name }}</span>
                             </div>
                             <div class="item-actions">
-                                {% if current_user.id == list.owner_id or current_user.id == item.added_by_id %}
+                                {% if is_owner or is_shared_with_user %}
                                     <form method="POST" action="{{ url_for('main.delete_item', item_id=item.id) }}" style="display: inline;">
                                         <button type="submit" class="btn-delete">✕</button>
                                     </form>
@@ -73,7 +73,7 @@
                             <span class="item-name">{{ item.item_name }}</span>
                         </div>
                         <div class="item-actions">
-                             {% if current_user.id == list.owner_id or current_user.id == item.added_by_id %}
+                             {% if is_owner or is_shared_with_user %}
                                 <form method="POST" action="{{ url_for('main.delete_item', item_id=item.id) }}" style="display: inline;">
                                     <button type="submit" class="btn-delete">✕</button>
                                 </form>
