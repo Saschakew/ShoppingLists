@@ -2,8 +2,19 @@ import eventlet
 eventlet.monkey_patch()
 
 import os
-from flask import Flask
+import sys
+from flask import Flask, session
 from flask_socketio import join_room, leave_room # Added join_room, leave_room
+from datetime import timedelta
+
+# Check if we're running on Windows
+IS_WINDOWS = sys.platform.startswith('win')
+
+# Only import Flask-Session and Redis if we're not in development mode on Windows
+# This avoids compatibility issues with eventlet and Windows
+if not (IS_WINDOWS and os.environ.get('FLASK_ENV') == 'development'):
+    import redis
+    from flask_session import Session # Added for Flask-Session
 
 # Import models and db from models.py
 from .models import db, User, ShoppingList, ListItem, ListShare
@@ -25,12 +36,25 @@ def create_app(config_overrides=None):
     app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', 'sqlite:///shopping_list.db')
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
-    # Mobile-optimized settings & Session settings
-    app.config['PERMANENT_SESSION_LIFETIME'] = 31536000  # 1 year
-    app.config['SESSION_PERMANENT'] = True
-    app.config['SESSION_TYPE'] = 'filesystem' # Consider Flask-Session with Redis/Memcached for production scaling
-    app.config['REMEMBER_COOKIE_DURATION'] = 31536000  # 1 year
-    # Set REMEMBER_COOKIE_SECURE to True if FLASK_ENV is production (implies HTTPS)
+    # Session configuration
+    app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=365) # 1 year duration
+    app.config['SESSION_PERMANENT'] = True # Make sessions permanent by default
+    
+    # Only use Flask-Session if not in development mode on Windows
+    if not (IS_WINDOWS and os.environ.get('FLASK_ENV') == 'development'):
+        app.config['SESSION_TYPE'] = os.environ.get('SESSION_TYPE', 'filesystem') # Use 'redis' in production, 'filesystem' in development
+        app.config['SESSION_USE_SIGNER'] = True # Encrypt session cookie
+        
+        # Only configure Redis if SESSION_TYPE is redis
+        if app.config['SESSION_TYPE'] == 'redis':
+            app.config['SESSION_REDIS'] = redis.StrictRedis.from_url(os.environ.get('REDIS_URL', 'redis://localhost:6379/0'))
+    else:
+        # For Windows development, use Flask's default session handling
+        # which uses the SECRET_KEY to sign the session cookie
+        app.config['SESSION_TYPE'] = 'null'
+    
+    # REMEMBER_COOKIE settings for Flask-Login's "remember me" functionality
+    app.config['REMEMBER_COOKIE_DURATION'] = timedelta(days=365) # 1 year
     app.config['REMEMBER_COOKIE_SECURE'] = os.environ.get('FLASK_ENV') == 'production'
     app.config['REMEMBER_COOKIE_HTTPONLY'] = True
 
@@ -47,6 +71,11 @@ def create_app(config_overrides=None):
     # Initialize extensions with app
     db.init_app(app)
     login_manager.init_app(app)
+    
+    # Only initialize Flask-Session if not in development mode on Windows
+    if not (IS_WINDOWS and os.environ.get('FLASK_ENV') == 'development'):
+        Session(app) # Initialize Flask-Session
+        
     socketio.init_app(app, async_mode='eventlet', message_queue=os.environ.get('SOCKETIO_MESSAGE_QUEUE'))
     migrate.init_app(app, db)
 
@@ -65,30 +94,16 @@ def create_app(config_overrides=None):
     from .main import main as main_blueprint
     app.register_blueprint(main_blueprint)
 
-    # Create database tables if they don't exist (for development/testing)
-    # For production, use migrations (e.g., Flask-Migrate) and manage schema changes outside app startup.
-    if os.environ.get('FLASK_ENV') != 'production':
+    # For development/testing only, create database tables if they don't exist
+    # This is only executed when running the app directly with 'flask run' or 'python -m shopping_list_app'
+    # For production, use migrations (flask db upgrade) in your deployment pipeline
+    if os.environ.get('FLASK_ENV') == 'development' and os.environ.get('FLASK_RUN_FROM_CLI', 'false').lower() == 'true':
         with app.app_context():
-            # First check if the database exists
             try:
                 db.create_all()
-                # Check if we need to add the favorite_list_id column
-                from sqlalchemy import inspect
-                inspector = inspect(db.engine)
-                columns = [column['name'] for column in inspector.get_columns('user')]
-                if 'favorite_list_id' not in columns:
-                    print("Adding missing favorite_list_id column to user table...")
-                    db.engine.execute('ALTER TABLE user ADD COLUMN favorite_list_id INTEGER REFERENCES shopping_list(id)')
-                    print("Column added successfully!")
+                print("Database tables created for development.")
             except Exception as e:
-                print(f"Database initialization error: {e}")
-                # If there's an error, try to recreate the tables
-                try:
-                    db.drop_all()
-                    db.create_all()
-                    print("Database recreated successfully!")
-                except Exception as e:
-                    print(f"Failed to recreate database: {e}")
+                print(f"Development database initialization error: {e}")
 
     return app
 

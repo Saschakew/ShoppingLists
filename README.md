@@ -122,7 +122,45 @@ sudo systemctl restart nginx
 
    **Important:** Always update dependencies after pulling changes. If you've added new packages to your application, failing to update dependencies will cause 502 Bad Gateway errors.
 
-## 7. Troubleshooting
+## 7. Performance Optimizations
+
+The application has been optimized for low-cost EC2 instances with the following features:
+
+### Redis Session Management
+
+Sessions are now stored in Redis instead of the filesystem, which reduces I/O load on the application server.
+
+- **Setup Redis on EC2:**
+  ```bash
+  # Install Redis
+  sudo yum install -y redis
+  sudo systemctl start redis
+  sudo systemctl enable redis
+  ```
+
+- **Required Environment Variables:**
+  Add these to your systemd service file:
+  ```
+  Environment="SESSION_TYPE=redis" "REDIS_URL=redis://localhost:6379/0"
+  ```
+
+- **Local Development:**
+  - On Linux/Mac: The app defaults to filesystem sessions if Redis is not available.
+  - On Windows: The app automatically uses Flask's default session handling to avoid compatibility issues between eventlet and Flask-Session.
+
+### Static File Serving
+
+Static files (CSS, JS, images) are served directly by Nginx instead of Flask, which significantly reduces the load on your application server.
+
+- This is configured in `.ebextensions/01_python.config` for Elastic Beanstalk.
+- For manual EC2 deployment, ensure your Nginx configuration includes:
+  ```
+  location /static {
+      alias /var/www/shopping_list_app/shopping_list_app/static;
+  }
+  ```
+
+## 8. Troubleshooting
 
 - **Check Gunicorn logs:**
     ```bash
@@ -134,16 +172,22 @@ sudo systemctl restart nginx
     sudo tail -n 50 /var/log/nginx/error.log
     sudo tail -n 50 /var/log/nginx/access.log
     ```
+- **Check Redis logs:**
+    ```bash
+    sudo tail -n 50 /var/log/redis/redis.log
+    ```
 - **Common issues:**
     - **502 Bad Gateway after update:** Usually indicates missing dependencies. Run `pip install -r requirements.txt` in your virtual environment.
     - **Error in logs about missing modules:** Check if you've added new imports without installing the packages.
-    - Internal Server Error after login: Ensure `login_user` uses `duration=timedelta(...)`, not an integer.
-    - Nginx shows default page: Confirm `shoppinglist.conf` uses `listen 80 default_server;` and `server_name _;`.
-    - Environment variables in systemd file must be on a single line.
+    - **Session issues after deployment:** Verify Redis is running and the REDIS_URL environment variable is correctly set.
+    - **Internal Server Error after login:** Ensure `login_user` uses `duration=timedelta(...)`, not an integer.
+    - **Nginx shows default page:** Confirm `shoppinglist.conf` uses `listen 80 default_server;` and `server_name _;`.
+    - **Environment variables** in systemd file must be on a single line.
 
-## 8. Security Notes
-- Do not expose your `SECRET_KEY` or database credentials publicly.
+## 9. Security Notes
+- Do not expose your `SECRET_KEY`, database credentials, or Redis URL publicly.
 - For production, consider setting up HTTPS (Let's Encrypt) and a domain name.
+- If using Redis for sessions in production with sensitive data, consider enabling Redis authentication.
 
 ---
 

@@ -25,6 +25,8 @@ REM Set environment variables
 set FLASK_APP=shopping_list_app.app
 set FLASK_ENV=development
 set FLASK_DEBUG=1
+set SESSION_TYPE=filesystem
+set FLASK_RUN_FROM_CLI=true
 
 REM Run Flask development server with SocketIO support
 echo Starting Flask development server with SocketIO...
