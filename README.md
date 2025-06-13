@@ -114,9 +114,8 @@ sudo systemctl restart nginx
 
 1. **Commit and push changes to GitHub from your local machine.**
 2. **On the EC2 instance:**
-    ```bash
-    cd /var/www/shopping_list_app
-    
+    ```bashsudo amazon-linux-extras install epel -y
+    sudo yum install certbot python-certbot-nginx -y
     # Backup the database before pulling (optional but recommended)
     cp instance/shopping_list.db instance/shopping_list.db.backup
     
