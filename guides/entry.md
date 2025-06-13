@@ -44,7 +44,7 @@ For understanding how the application is deployed and managed in production:
 
 *   **Main Application Code:** `shopping_list_app/`
 *   **Models:** `shopping_list_app/models.py`
-*   **Routes/Views (Blueprints):** `shopping_list_app/auth/routes.py`, `shopping_list_app/main/routes.py`, `shopping_list_app/api/routes.py`
+*   **Routes/Views (Blueprints):** `shopping_list_app/auth.py` (for auth routes), `shopping_list_app/main.py` (for main application and API routes)
 *   **Templates:** `shopping_list_app/templates/`
 *   **Static Files:** `shopping_list_app/static/`
 *   **Tests:** `tests/`
